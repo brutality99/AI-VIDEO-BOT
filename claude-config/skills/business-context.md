@@ -22,6 +22,33 @@ Stack: n8n + Creatomate + ElevenLabs + DALL-E + Veo/Kling
 TECH STACK MOHAMMED USES:
 n8n (theindianguyy.app.n8n.cloud), Creatomate, ElevenLabs, DALL-E, Google Veo, Kling, fal.ai, Pexels, Google Sheets, Telegram Bot, YouTube API, TikTok API, Instagram API
 
+LOCAL AI:
+Ollama installed at C:\Users\moham\AppData\Local\Programs\Ollama\ollama.exe
+Models: llama3.2 (general), qwen2.5-coder (code)
+MCP: ollama-mcp connected at localhost:11434
+Use for: summaries, drafts, simple scripts. Use Claude Sonnet for everything critical.
+
+GITHUB REPO:
+github.com/brutality99/AI-VIDEO-BOT (public)
+Contains: workflow JSON, install.ps1, ENV_TEMPLATE.txt, claude-config/
+Use to restore entire setup on a new PC in 10 minutes.
+
+N8N:
+Instance: theindianguyy.app.n8n.cloud
+Main workflow: ai_video_bot_v6_FIXED.json (127 nodes, 108 connections)
+Workflow ID: DTILadQoZ7GrR78d
+Telegram security whitelist ID: 8370599696
+
+MCP SERVERS ACTIVE:
+- context7: live library docs
+- memory: persistent memory
+- playwright: browser automation
+- sequential-thinking: step by step reasoning
+- filesystem: file access
+- fetch: URL fetching
+- n8n: read/write n8n workflows
+- ollama: local AI (llama3.2, qwen2.5-coder)
+
 CLAUDE CODE RULES:
 - Always read CLAUDE.md and all .claude/skills/ files at session start
 - Zero orphaned nodes in any n8n workflow
