@@ -1,0 +1,4337 @@
+﻿{
+  "name": "AI Video Bot v6 - Superflow FINAL",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 9 * * *"
+            }
+          ]
+        }
+      },
+      "name": "Daily 9AM Auto-Run",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        240,
+        60
+      ]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 9 * * 1"
+            }
+          ]
+        }
+      },
+      "name": "Weekly Monday Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        240,
+        180
+      ]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 8 * * *"
+            }
+          ]
+        }
+      },
+      "name": "Daily 8AM Health Check",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        240,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "updates": [
+          "message",
+          "callback_query"
+        ],
+        "additionalFields": {}
+      },
+      "name": "Telegram Listener",
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        240,
+        420
+      ],
+      "credentials": {
+        "telegramApi": {
+          "id": "TELEGRAM_BOT_TOKEN",
+          "name": "Telegram Bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "whatsapp-cmd",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "name": "WhatsApp Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        240,
+        540
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const item = $input.first().json;\nlet cmd = '', chatId = '', src = '', fileId = '', fileType = '';\n\nif (item.message) {\n  const msg = item.message;\n  cmd = (msg.text || msg.caption || '').trim();\n  chatId = String(msg.chat.id);\n  src = 'telegram';\n  if (msg.video) { fileId = msg.video.file_id; fileType = 'video'; }\n  else if (msg.document) { fileId = msg.document.file_id; fileType = 'document'; }\n  else if (msg.photo) { fileId = msg.photo[msg.photo.length-1].file_id; fileType = 'photo'; }\n} else if (item.callback_query) {\n  cmd = (item.callback_query.data || '').trim();\n  chatId = String(item.callback_query.message.chat.id);\n  src = 'telegram_callback';\n} else if (item.Body) {\n  cmd = (item.Body || '').trim();\n  chatId = item.From || '';\n  src = 'whatsapp';\n} else if (item.entry) {\n  const msg = item.entry?.[0]?.changes?.[0]?.value?.messages?.[0];\n  cmd = (msg?.text?.body || '').trim();\n  chatId = msg?.from || '';\n  src = 'whatsapp_cloud';\n} else {\n  cmd = 'CREATE'; chatId = '8370599696' || ''; src = 'schedule';\n}\n\nconst cmdUpper = cmd.toUpperCase();\nlet action = 'HELP', customTopic = '', niche = 'general', editInstructions = '';\nlet lang = '', voicetestTopic = '', dramaTitle = '', seriesName = '', seriesEp = '';\nlet thumbnailPick = 0, qualityMode = 'normal', budgetMode = 'auto';\n\nif (fileId && fileType === 'video') {\n  action = 'EDIT_MY_VIDEO';\n  editInstructions = cmdUpper.startsWith('EDIT:') ? cmd.replace(/EDIT:/i, '').trim() : 'enhance and make viral';\n}\nelse if (['CREATE','GO','MAKE','AUTO'].includes(cmdUpper)) { action = 'CREATE'; }\nelse if (cmdUpper.startsWith('TOPIC:')) { action = 'CREATE'; customTopic = cmd.replace(/TOPIC:/i,'').trim(); }\nelse if (cmdUpper.startsWith('NICHE:')) { action = 'CREATE'; niche = cmd.replace(/NICHE:/i,'').trim(); }\nelse if (cmdUpper === 'QUALITY:HIGH' || cmdUpper === 'QUALITY:HIGH CREATE') { action = 'CREATE'; qualityMode = 'high'; }\nelse if (cmdUpper === 'BUDGET:FREE' || cmdUpper === 'BUDGET:FREE CREATE') { action = 'CREATE'; budgetMode = 'free'; }\nelse if (cmdUpper.startsWith('BUDGET:FREE TOPIC:')) { action = 'CREATE'; budgetMode = 'free'; customTopic = cmd.replace(/BUDGET:FREE TOPIC:/i,'').trim(); }\nelse if (cmdUpper === 'LANG:HINDI' || cmdUpper === 'LANG:HINDI CREATE') { action = 'LANG_HINDI'; lang = 'hindi'; }\nelse if (cmdUpper.startsWith('LANG:HINDI TOPIC:')) { action = 'LANG_HINDI'; lang = 'hindi'; customTopic = cmd.replace(/LANG:HINDI TOPIC:/i,'').trim(); }\nelse if (cmdUpper === 'LANG:SPANISH CREATE' || cmdUpper === 'LANG:SPANISH') { action = 'CREATE'; lang = 'spanish'; }\nelse if (cmdUpper.startsWith('DRAMA:')) { action = 'DRAMA'; dramaTitle = cmd.replace(/DRAMA:/i,'').trim(); }\nelse if (cmdUpper.startsWith('SERIES:')) {\n  action = 'DRAMA';\n  const m = cmd.match(/SERIES:\\s*(.+?)\\s+EP(\\d+)/i);\n  if (m) { seriesName = m[1]; seriesEp = m[2]; }\n  dramaTitle = cmd.replace(/SERIES:/i,'').trim();\n}\nelse if (cmdUpper.startsWith('VOICETEST:')) { action = 'VOICETEST'; voicetestTopic = cmd.replace(/VOICETEST:/i,'').trim() || 'ancient india'; }\nelse if (cmdUpper === 'VOICE REPORT') { action = 'VOICE_REPORT'; }\nelse if (cmdUpper.startsWith('THUMBNAIL:')) { action = 'THUMBNAIL_PICK'; thumbnailPick = parseInt(cmd.replace(/THUMBNAIL:/i,'').trim()) || 1; }\nelse if (cmdUpper === 'STATUS') { action = 'STATUS'; }\nelse if (cmdUpper === 'PAUSE') { action = 'PAUSE'; }\nelse if (cmdUpper === 'RESUME') { action = 'RESUME'; }\nelse if (cmdUpper === 'COST') { action = 'COST'; }\nelse if (cmdUpper === 'SECURITY LOG') { action = 'SECURITY_LOG'; }\nelse if (cmdUpper === 'PUBLISH' || cmdUpper === 'YES') { action = 'PUBLISH'; }\nelse if (cmdUpper === 'REJECT' || cmdUpper === 'NO') { action = 'REJECT'; }\nelse if (cmdUpper.startsWith('EDIT:')) { action = 'EDIT'; editInstructions = cmd.replace(/EDIT:/i,'').trim(); }\nelse if (cmdUpper === 'HELP' || cmdUpper === 'START' || cmdUpper === '/START') { action = 'HELP'; }\n\nreturn [{ json: { action, cmd, cmdUpper, customTopic, niche, chatId, src, fileId, fileType, editInstructions, lang, voicetestTopic, dramaTitle, seriesName, seriesEp, thumbnailPick, qualityMode, budgetMode, ts: new Date().toISOString() } }];"
+      },
+      "name": "Command Parser v6",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        480,
+        420
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const item = $input.first().json;\nconst chatId = String(item.chatId || '');\nconst ALLOWED_ID = '8370599696';\nconst src = item.src || '';\n\nconst stored = $getWorkflowStaticData('global');\nif (!stored.securityLog) stored.securityLog = [];\nif (!stored.dailyCount) stored.dailyCount = {};\nif (stored.paused === undefined) stored.paused = false;\nif (!stored.monthlyCost) stored.monthlyCost = 0;\nif (!stored.costLog) stored.costLog = [];\n\nconst logEntry = { ts: new Date().toISOString(), chatId, src, action: item.action, cmd: item.cmd };\n\nif (stored.paused && item.action !== 'RESUME' && item.action !== 'STATUS') {\n  logEntry.blocked = true; logEntry.reason = 'workflow_paused';\n  stored.securityLog.unshift(logEntry);\n  if (stored.securityLog.length > 100) stored.securityLog = stored.securityLog.slice(0,100);\n  return [{ json: { ...item, blocked: true, blockReason: 'workflow_paused' } }];\n}\n\nif (stored.monthlyCost > 100 && item.action === 'CREATE') {\n  logEntry.blocked = true; logEntry.reason = 'monthly_budget_exceeded';\n  stored.securityLog.unshift(logEntry);\n  if (stored.securityLog.length > 100) stored.securityLog = stored.securityLog.slice(0,100);\n  return [{ json: { ...item, blocked: true, blockReason: 'monthly_budget_exceeded', sendAlert: true } }];\n}\n\nif ((src === 'telegram' || src === 'telegram_callback') && chatId !== ALLOWED_ID) {\n  logEntry.blocked = true; logEntry.reason = 'unauthorized_user'; logEntry.alert = true;\n  stored.securityLog.unshift(logEntry);\n  if (stored.securityLog.length > 100) stored.securityLog = stored.securityLog.slice(0,100);\n  return [{ json: { ...item, blocked: true, blockReason: 'unauthorized_user', sendAlert: true } }];\n}\n\nconst today = new Date().toISOString().split('T')[0];\nif (!stored.dailyCount[today]) stored.dailyCount[today] = 0;\n\nif (item.action === 'CREATE' && stored.dailyCount[today] >= 10) {\n  logEntry.blocked = true; logEntry.reason = 'rate_limit';\n  stored.securityLog.unshift(logEntry);\n  if (stored.securityLog.length > 100) stored.securityLog = stored.securityLog.slice(0,100);\n  return [{ json: { ...item, blocked: true, blockReason: 'rate_limit_10_per_day' } }];\n}\n\nif (item.action === 'CREATE') stored.dailyCount[today]++;\n\nlogEntry.blocked = false;\nstored.securityLog.unshift(logEntry);\nif (stored.securityLog.length > 100) stored.securityLog = stored.securityLog.slice(0,100);\n\nreturn [{ json: { ...item, blocked: false, todayCount: stored.dailyCount[today] || 0 } }];"
+      },
+      "name": "Security Gate",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        680,
+        420
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "blocked",
+              "leftValue": "={{ $json.blocked }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "name": "Is Blocked?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        880,
+        420
+      ]
+    },
+    {
+      "parameters": {
+        "chatId": "8370599696",
+        "text": "SECURITY ALERT\n\nBlocked request:\nReason: {{ $json.blockReason }}\nFrom: {{ $json.chatId }}\nCommand: {{ $json.cmd }}\nTime: {{ $json.ts }}\n\nSend SECURITY LOG to review all events.",
+        "additionalFields": {}
+      },
+      "name": "Security Alert",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1080,
+        280
+      ],
+      "credentials": {
+        "telegramApi": {
+          "id": "TELEGRAM_BOT_TOKEN",
+          "name": "Telegram Bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "create",
+              "leftValue": "={{ $json.action }}",
+              "rightValue": "CREATE",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "name": "Is CREATE?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1080,
+        540
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "edit",
+              "leftValue": "={{ $json.action }}",
+              "rightValue": "EDIT_MY_VIDEO",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "name": "Is MY VIDEO EDIT?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1280,
+        640
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "pub",
+              "leftValue": "={{ $json.action }}",
+              "rightValue": "PUBLISH",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "name": "Is PUBLISH?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1480,
+        740
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "drama",
+              "leftValue": "={{ $json.action }}",
+              "rightValue": "DRAMA",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "name": "Is DRAMA SERIES?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1680,
+        840
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "vt",
+              "leftValue": "={{ $json.action }}",
+              "rightValue": "VOICETEST",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "name": "Is VOICETEST?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1880,
+        940
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "hindi",
+              "leftValue": "={{ $json.action }}",
+              "rightValue": "LANG_HINDI",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "name": "Is LANG HINDI?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        2080,
+        1040
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "status",
+              "leftValue": "={{ $json.action }}",
+              "rightValue": "STATUS",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "name": "Is STATUS?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        2280,
+        1140
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "pause",
+              "leftValue": "={{ $json.action }}",
+              "rightValue": "PAUSE",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "name": "Is PAUSE?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        2480,
+        1240
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "resume",
+              "leftValue": "={{ $json.action }}",
+              "rightValue": "RESUME",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "name": "Is RESUME?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        2680,
+        1340
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "cost",
+              "leftValue": "={{ $json.action }}",
+              "rightValue": "COST",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "name": "Is COST?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        2880,
+        1440
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "seclog",
+              "leftValue": "={{ $json.action }}",
+              "rightValue": "SECURITY_LOG",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "name": "Is SECURITY LOG?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        3080,
+        1540
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "vrpt",
+              "leftValue": "={{ $json.action }}",
+              "rightValue": "VOICE_REPORT",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "name": "Is VOICE REPORT?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        3280,
+        1640
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "thpick",
+              "leftValue": "={{ $json.action }}",
+              "rightValue": "THUMBNAIL_PICK",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "name": "Is THUMBNAIL PICK?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        3480,
+        1740
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "reject",
+              "leftValue": "={{ $json.action }}",
+              "rightValue": "REJECT",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "name": "Is REJECT?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        3680,
+        1840
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const data = $input.first().json;\n\nlet memory = {};\ntry {\n  const stored = $getWorkflowStaticData('global');\n  memory = stored.videoMemory || {};\n} catch(e) { memory = {}; }\n\nif (!memory.totalVideos) memory.totalVideos = 0;\nif (!memory.lastTopics) memory.lastTopics = [];\nif (!memory.nichePerformance) memory.nichePerformance = {};\nif (!memory.preferredStyle) memory.preferredStyle = 'cinematic documentary';\nif (!memory.bestPerformingNiche) memory.bestPerformingNiche = 'general';\nif (!memory.channelName) memory.channelName = 'Empires Untold';\nif (!memory.defaultVoice) memory.defaultVoice = 'Max';\nif (!memory.voicePerformance) memory.voicePerformance = {};\nif (!memory.bestVoicePerNiche) memory.bestVoicePerNiche = {};\nif (!memory.totalCost) memory.totalCost = 0;\nif (!memory.seriesData) memory.seriesData = {};\nif (!memory.qualityScores) memory.qualityScores = [];\n\nmemory.totalVideos += 1;\n\nconst topic = data.customTopic || 'auto';\nmemory.lastTopics.unshift(topic);\nif (memory.lastTopics.length > 20) memory.lastTopics = memory.lastTopics.slice(0,20);\n\nconst niche = data.niche || 'general';\nif (!memory.nichePerformance[niche]) memory.nichePerformance[niche] = { count: 0, avgViews: 0 };\nmemory.nichePerformance[niche].count += 1;\n\nlet bestNiche = 'general', bestCount = 0;\nfor (const [n, s] of Object.entries(memory.nichePerformance)) {\n  if (s.count > bestCount) { bestNiche = n; bestCount = s.count; }\n}\nmemory.bestPerformingNiche = bestNiche;\n\nif (data.seriesName) {\n  if (!memory.seriesData[data.seriesName]) memory.seriesData[data.seriesName] = { episodes: 0, lastEp: 0 };\n  memory.seriesData[data.seriesName].episodes += 1;\n  memory.seriesData[data.seriesName].lastEp = parseInt(data.seriesEp || 1);\n}\n\ntry {\n  const stored = $getWorkflowStaticData('global');\n  stored.videoMemory = memory;\n} catch(e) {}\n\nreturn [{ json: {\n  ...data,\n  memory: {\n    totalVideos: memory.totalVideos,\n    recentTopics: memory.lastTopics.slice(0,5),\n    bestNiche: memory.bestPerformingNiche,\n    preferredStyle: memory.preferredStyle,\n    channelName: memory.channelName,\n    avoidRepeat: memory.lastTopics.slice(0,3),\n    defaultVoice: memory.defaultVoice,\n    bestVoicePerNiche: memory.bestVoicePerNiche,\n    totalCost: memory.totalCost,\n    seriesData: memory.seriesData,\n    qualityScores: memory.qualityScores.slice(0,10)\n  }\n}}];"
+      },
+      "name": "Memory & Taste Tracker v6",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1280,
+        380
+      ]
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.chatId || '8370599696' }}",
+        "text": "AI Video Bot v6 Superflow - Commands\n\nCREATE - Auto video on trending topic\nTOPIC: [text] - Specific topic\nNICHE: [text] - Set category\nQUALITY:HIGH - Force 9+ quality score\nBUDGET:FREE - Free tools only\n\nLANGUAGE:\nLANG:HINDI CREATE - Hindi video (Taksh voice)\nLANG:HINDI TOPIC: [text] - Hindi on topic\nLANG:SPANISH CREATE - Spanish video\n\nVOICE:\nVOICETEST: [topic] - 30sec clip all 4 voices\nVOICE REPORT - Voice performance stats\n\nTHUMBNAIL:\nTHUMBNAIL:1 / :2 / :3 - Pick thumbnail option\n\nDRAMA / SERIES:\nDRAMA: [topic] - Cinematic drama style\nSERIES: [name] EP[number] - Episode series\n\nAPPROVAL:\nPUBLISH - Post to all 7 platforms\nREJECT - Discard video\nEDIT: [notes] - Redo with changes\n\nSYSTEM:\nSTATUS - System health + stats\nCOST - Monthly spend report\nPAUSE - Halt all scheduled runs\nRESUME - Restart scheduled runs\nSECURITY LOG - Recent security events\n\nUpload YOUR OWN VIDEO with a caption:\n- EDIT: make this cinematic\n- EDIT: add dramatic captions\n- (no caption) = auto-enhance\n\nPlatforms: YouTube, Shorts, TikTok, Instagram, Facebook, Snapchat",
+        "additionalFields": {}
+      },
+      "name": "Send Help v6",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        3880,
+        1960
+      ],
+      "credentials": {
+        "telegramApi": {
+          "id": "TELEGRAM_BOT_TOKEN",
+          "name": "Telegram Bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.chatId || '8370599696' }}",
+        "text": "Video rejected. Send CREATE or upload your own video to start again.",
+        "additionalFields": {}
+      },
+      "name": "Reject Notify",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        3880,
+        1760
+      ],
+      "credentials": {
+        "telegramApi": {
+          "id": "TELEGRAM_BOT_TOKEN",
+          "name": "Telegram Bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const stored = $getWorkflowStaticData('global');\nconst memory = stored.videoMemory || {};\nconst today = new Date().toISOString().split('T')[0];\nconst todayCount = (stored.dailyCount || {})[today] || 0;\nconst monthlyCost = stored.monthlyCost || 0;\nconst paused = stored.paused || false;\nconst alertLog = stored.securityLog || [];\nconst lastAlert = alertLog.find(e => e.alert) || null;\n\nconst statusMsg = `AI Video Bot v6 - System Status\\n\\n` +\n  `Status: ${paused ? 'PAUSED â¸' : 'RUNNING'}\\n` +\n  `Videos Today: ${todayCount}/10\\n` +\n  `Total Videos All Time: ${memory.totalVideos || 0}\\n` +\n  `Monthly Spend: $${monthlyCost.toFixed(2)} / $80 budget\\n` +\n  `Auto-Pause Limit: $100\\n\\n` +\n  `Best Niche: ${memory.bestPerformingNiche || 'general'}\\n` +\n  `Default Voice: ${memory.defaultVoice || 'Max'}\\n` +\n  `Channel: ${memory.channelName || 'Empires Untold'}\\n\\n` +\n  `Last Security Alert: ${lastAlert ? lastAlert.ts + ' - ' + lastAlert.reason : 'None'}\\n\\n` +\n  `APIs Ready: Anthropic, ElevenLabs, fal.ai, OpenAI, Creatomate, Pexels, Google AI Studio\\n` +\n  `Send STATUS anytime to refresh.`;\n\nreturn [{ json: { ...($input.first().json), statusMsg } }];"
+      },
+      "name": "Status Check",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2480,
+        1000
+      ]
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.chatId || '8370599696' }}",
+        "text": "={{ $json.statusMsg }}",
+        "additionalFields": {}
+      },
+      "name": "Send Status",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        2680,
+        1000
+      ],
+      "credentials": {
+        "telegramApi": {
+          "id": "TELEGRAM_BOT_TOKEN",
+          "name": "Telegram Bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const stored = $getWorkflowStaticData('global');\nstored.paused = true;\nstored.pausedAt = new Date().toISOString();\nreturn [{ json: { ...($input.first().json), paused: true, msg: 'Workflow PAUSED. All scheduled runs halted. Daily 9AM auto-run stopped. Send RESUME to restart.' } }];"
+      },
+      "name": "Pause Handler",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2680,
+        1140
+      ]
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.chatId || '8370599694' }}",
+        "text": "={{ $json.msg }}",
+        "additionalFields": {}
+      },
+      "name": "Send Pause Confirm",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        2880,
+        1140
+      ],
+      "credentials": {
+        "telegramApi": {
+          "id": "TELEGRAM_BOT_TOKEN",
+          "name": "Telegram Bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const stored = $getWorkflowStaticData('global');\nstored.paused = false;\nstored.resumedAt = new Date().toISOString();\nreturn [{ json: { ...($input.first().json), paused: false, msg: 'Workflow RESUMED! All systems operational. Daily auto-runs will continue normally.' } }];"
+      },
+      "name": "Resume Handler",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2880,
+        1240
+      ]
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.chatId || '8370599694' }}",
+        "text": "={{ $json.msg }}",
+        "additionalFields": {}
+      },
+      "name": "Send Resume Confirm",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        3080,
+        1240
+      ],
+      "credentials": {
+        "telegramApi": {
+          "id": "TELEGRAM_BOT_TOKEN",
+          "name": "Telegram Bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const stored = $getWorkflowStaticData('global');\nconst monthlyCost = stored.monthlyCost || 0;\nconst costLog = stored.costLog || [];\nconst thisMonth = new Date().toISOString().slice(0,7);\n\nconst monthlyEntries = costLog.filter(e => e.date && e.date.startsWith(thisMonth));\nconst byApi = { anthropic: 0, elevenlabs: 0, openai: 0, fal: 0, creatomate: 0 };\nmonthlyEntries.forEach(e => {\n  byApi.anthropic += e.anthropic || 0;\n  byApi.elevenlabs += e.elevenlabs || 0;\n  byApi.openai += e.openai || 0;\n  byApi.fal += e.fal || 0;\n  byApi.creatomate += e.creatomate || 0;\n});\n\nconst avgCost = monthlyEntries.length > 0 ? (monthlyCost / monthlyEntries.length).toFixed(2) : '0.00';\nconst budgetPct = ((monthlyCost / 80) * 100).toFixed(0);\n\nconst costReport = `Monthly Cost Report - ${thisMonth}\\n\\n` +\n  `Total Spent: $${monthlyCost.toFixed(2)} (${budgetPct}% of $80 budget)\\n` +\n  `Avg Per Video: $${avgCost}\\n` +\n  `Videos This Month: ${monthlyEntries.length}\\n\\n` +\n  `Breakdown:\\n` +\n  `Claude (Anthropic): $${byApi.anthropic.toFixed(2)}\\n` +\n  `ElevenLabs: $${byApi.elevenlabs.toFixed(2)}\\n` +\n  `DALL-E (OpenAI): $${byApi.openai.toFixed(2)}\\n` +\n  `Kling (fal.ai): $${byApi.fal.toFixed(2)}\\n` +\n  `Creatomate: $${byApi.creatomate.toFixed(2)}\\n\\n` +\n  `Budget Alert: $80 | Auto-Pause: $100`;\n\nreturn [{ json: { ...($input.first().json), costReport } }];"
+      },
+      "name": "Cost Report Handler",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3080,
+        1340
+      ]
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.chatId || '8370599694' }}",
+        "text": "={{ $json.costReport }}",
+        "additionalFields": {}
+      },
+      "name": "Send Cost Report",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        3280,
+        1340
+      ],
+      "credentials": {
+        "telegramApi": {
+          "id": "TELEGRAM_BOT_TOKEN",
+          "name": "Telegram Bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const stored = $getWorkflowStaticData('global');\nconst log = (stored.securityLog || []).slice(0,20);\nlet msg = 'Security Log - Last 20 Events:\\n\\n';\nif (log.length === 0) {\n  msg += 'No events recorded yet.';\n} else {\n  log.forEach((e, i) => {\n    const time = e.ts ? e.ts.slice(5,19).replace('T',' ') : '?';\n    const status = e.blocked ? `BLOCKED [${e.reason || 'unknown'}]` : 'OK';\n    msg += `${i+1}. [${time}] ${e.action || e.cmd || 'cmd'} from ${e.chatId || '?'} (${e.src || '?'}) - ${status}\\n`;\n  });\n}\nreturn [{ json: { ...($input.first().json), securityLogMsg: msg } }];"
+      },
+      "name": "Security Log Handler",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3280,
+        1440
+      ]
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.chatId || '8370599694' }}",
+        "text": "={{ $json.securityLogMsg }}",
+        "additionalFields": {}
+      },
+      "name": "Send Security Log",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        3480,
+        1440
+      ],
+      "credentials": {
+        "telegramApi": {
+          "id": "TELEGRAM_BOT_TOKEN",
+          "name": "Telegram Bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const stored = $getWorkflowStaticData('global');\nconst memory = stored.videoMemory || {};\nconst voicePerf = memory.voicePerformance || {};\nconst bestPerNiche = memory.bestVoicePerNiche || {};\nconst videoCount = memory.totalVideos || 0;\n\nlet msg = 'Voice Performance Report\\n\\n';\n\nif (Object.keys(voicePerf).length === 0) {\n  msg += 'No voice data yet. Create some videos to build analytics!\\n\\n';\n  msg += 'Available voices:\\n1. Taksh - Hindi, warm cultural\\n2. Bradford - Serious, political, dark\\n3. Max - Documentary, educational (default)\\n4. Samantha - Emotional, true crime, intimate';\n} else {\n  msg += 'Voice Usage Stats:\\n';\n  const voices = ['Taksh','Bradford','Max','Samantha'];\n  voices.forEach(v => {\n    const d = voicePerf[v] || { count: 0, avgScore: 0 };\n    const pct = videoCount > 0 ? ((d.count / videoCount) * 100).toFixed(0) : 0;\n    msg += `${v}: ${d.count} videos (${pct}%), avg quality ${(d.avgScore || 0).toFixed(1)}/10\\n`;\n  });\n  msg += '\\nBest Voice Per Niche:\\n';\n  if (Object.keys(bestPerNiche).length === 0) {\n    msg += 'Not enough data yet.';\n  } else {\n    for (const [niche, voice] of Object.entries(bestPerNiche)) {\n      msg += `${niche}: ${voice}\\n`;\n    }\n  }\n  msg += `\\nDefault: ${memory.defaultVoice || 'Max (auto-select)'}`;\n}\n\nreturn [{ json: { ...($input.first().json), voiceReportMsg: msg } }];"
+      },
+      "name": "Voice Report Handler",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3480,
+        1540
+      ]
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.chatId || '8370599694' }}",
+        "text": "={{ $json.voiceReportMsg }}",
+        "additionalFields": {}
+      },
+      "name": "Send Voice Report",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        3680,
+        1540
+      ],
+      "credentials": {
+        "telegramApi": {
+          "id": "TELEGRAM_BOT_TOKEN",
+          "name": "Telegram Bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const data = $input.first().json;\nconst pick = data.thumbnailPick || 1;\nconst stored = $getWorkflowStaticData('global');\nconst pendingVideo = stored.pendingVideo || {};\n\nlet selectedUrl = '';\nif (pick === 1) selectedUrl = pendingVideo.thumbAUrl || pendingVideo.thumbUrl || '';\nelse if (pick === 2) selectedUrl = pendingVideo.thumbBUrl || '';\nelse if (pick === 3) selectedUrl = pendingVideo.thumbCUrl || '';\n\nif (selectedUrl) {\n  stored.pendingVideo = { ...pendingVideo, thumbUrl: selectedUrl, selectedThumb: pick };\n}\n\nconst msg = selectedUrl\n  ? `Thumbnail ${pick} selected! It will be used when you PUBLISH.\\n\\nPreview: ${selectedUrl}`\n  : `No pending video found. Create a video first, then pick thumbnail.`;\n\nreturn [{ json: { ...data, selectedThumbnailUrl: selectedUrl, selectedThumb: pick, thumbnailPickMsg: msg } }];"
+      },
+      "name": "Thumbnail Pick Handler",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3680,
+        1640
+      ]
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.chatId || '8370599694' }}",
+        "text": "={{ $json.thumbnailPickMsg }}",
+        "additionalFields": {}
+      },
+      "name": "Send Thumbnail Confirm",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        3880,
+        1640
+      ],
+      "credentials": {
+        "telegramApi": {
+          "id": "TELEGRAM_BOT_TOKEN",
+          "name": "Telegram Bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const d = $input.first().json;\ntry {\n  const response = await fetch('https://api.anthropic.com/v1/messages', {\n    method: 'POST',\n    headers: {\n      'x-api-key': 'YOUR_ANTHROPIC_API_KEY',\n      'anthropic-version': '2023-06-01',\n      'content-type': 'application/json'\n    },\n    body: JSON.stringify({\n      model: 'claude-sonnet-4-20250514',\n      max_tokens: 1024,\n      system: \"You are a real-time trend analyst. Return ONLY valid JSON, no markdown.\",\n      messages: [{\"role\":\"user\",\"content\":\"Today is \" + new Date().toISOString().split('T')[0] + \". Analyze this topic: '\" + (d.customTopic || d.niche || (d.memory && d.memory.bestNiche) || 'technology') + \"'.\\n\\nIs it still trending or evergreen? Return JSON: {is_trending, trend_score, days_since_peak_approx, is_evergreen, freshness_note, is_south_asian_topic, suggest_hindi_version, fresher_angle, recommended_topic}\"}]\n    })\n  });\n  const data = await response.json();\n  return [{ json: data }];\n} catch(e) {\n  return [{ json: { content: [{ text: '{}' }], error: e.message } }];\n}"
+      },
+      "name": "Trend Check",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1480,
+        200
+      ],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const raw = $input.first().json;\nconst txt = raw.content?.[0]?.text || '{}';\nlet trend = {};\ntry { const m = txt.match(/\\{[\\s\\S]*\\}/); trend = m ? JSON.parse(m[0]) : {}; } catch(e) {}\n\nif (!trend.trend_score) trend = {\n  is_trending: true,\n  trend_score: 7,\n  is_evergreen: true,\n  freshness_note: 'Topic has broad appeal',\n  is_south_asian_topic: false,\n  suggest_hindi_version: false,\n  fresher_angle: 'Modern angle with recent context',\n  recommended_topic: raw.customTopic || raw.niche || 'General knowledge'\n};\n\nconst data = $input.first().json;\nreturn [{ json: { ...data, trend } }];"
+      },
+      "name": "Parse Trend",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1680,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const d = $input.first().json;\ntry {\n  const response = await fetch('https://api.anthropic.com/v1/messages', {\n    method: 'POST',\n    headers: {\n      'x-api-key': 'YOUR_ANTHROPIC_API_KEY',\n      'anthropic-version': '2023-06-01',\n      'content-type': 'application/json'\n    },\n    body: JSON.stringify({\n      model: 'claude-sonnet-4-20250514',\n      max_tokens: 4000,\n      system: \"You are a viral content researcher and scriptwriter. Return ONLY valid JSON, no markdown.\",\n      messages: [{\"role\":\"user\",\"content\":\"Create a complete viral 55-60 second video package.\\n\\nTopic: '\" + (d.customTopic || (d.trend && d.trend.recommended_topic) || d.niche || (d.memory && d.memory.bestNiche) || 'general knowledge') + \"'\\nAvoid: \" + JSON.stringify((d.memory && d.memory.avoidRepeat) || []) + \"\\nChannel: \" + ((d.memory && d.memory.channelName) || 'Empires Untold') + \" | Style: \" + ((d.memory && d.memory.preferredStyle) || 'cinematic documentary') + \"\\nTrend: \" + ((d.trend && d.trend.freshness_note) || 'evergreen') + \"\\nLanguage: \" + (d.lang || 'english') + \"\\nQuality mode: \" + (d.qualityMode || 'normal') + \"\\n\\nTHUMBNAIL RULES (top YouTube creator style):\\n- One clear dominant subject filling 60% of frame\\n- Dramatic lighting from side or below\\n- High contrast, emotion visible on face or subject\\n- Bold composition with clear focal point\\n- thumbnail_text: max 5 words, triggers curiosity or shock\\n- thumbnail_text_position: top OR bottom - never center\\n\\nHOOK RULES: First sentence must be a shocking statement or question. Make viewer feel they MUST keep watching.\\n\\nReturn JSON: {topic, why_trending, hook_angle, visual_style, mood, content_type, target_audience, title, hook, script_segments, voiceover_full, ai_video_prompts, pexels_search_terms, description, tags, thumbnail_prompt, thumbnail_prompt_b, thumbnail_prompt_c, thumbnail_text, thumbnail_text_position, estimated_duration, south_asian_content}\"}]\n    })\n  });\n  const data = await response.json();\n  return [{ json: data }];\n} catch(e) {\n  return [{ json: { content: [{ text: '{}' }], error: e.message } }];\n}"
+      },
+      "name": "Claude Research & Script",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1880,
+        200
+      ],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const raw = $input.first().json;\nconst txt = raw.content?.[0]?.text || '{}';\nlet d = {};\ntry { const m = txt.match(/\\{[\\s\\S]*\\}/); d = m ? JSON.parse(m[0]) : {}; } catch(e) {}\n\nif (!d.title) d = {\n  topic: 'Ancient Hidden Knowledge',\n  mood: 'educational',\n  content_type: 'documentary',\n  title: 'The Truth They Never Taught You',\n  hook: 'This discovery changed everything',\n  voiceover_full: 'This is the story they never told you. A discovery hidden for centuries...',\n  ai_video_prompts: [\n    'cinematic drone shot ancient stone ruins golden hour epic scale 8K photorealistic',\n    'close up aged hands turning yellowed manuscript dramatic lighting',\n    'wide angle historical marketplace morning light dust particles',\n    'slow motion crowd reaction documentary natural lighting',\n    'aerial time lapse city at dusk dramatic storm clouds'\n  ],\n  pexels_search_terms: ['ancient history ruins','documentary cinematic','historical artifacts','science laboratory','dramatic landscape'],\n  tags: ['history','viral','documentary','educational','shorts','facts','mindblowing','ancient','truth','hidden'],\n  thumbnail_prompt: 'dramatic cinematic ancient ruins golden hour no text',\n  thumbnail_prompt_b: 'mysterious glowing ancient artifact dark background dramatic lighting no text',\n  thumbnail_prompt_c: 'epic aerial view ancient civilization sunrise no text',\n  thumbnail_text: 'The Hidden Truth',\n  estimated_duration: 58,\n  south_asian_content: false,\n  script_segments: [{text:'This is the story...',visual_prompt:'ancient ruins',caption:'HIDDEN FOR CENTURIES',duration:12}],\n  description: 'Discover the truth behind ancient mysteries that historians never fully explained.',\n  target_audience: '18-35 history enthusiasts'\n};\n\nconst inc = $input.first().json;\nreturn [{ json: { ...inc, ...d } }];"
+      },
+      "name": "Parse Script v6",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2080,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const d = $input.first().json;\ntry {\n  const response = await fetch('https://api.anthropic.com/v1/messages', {\n    method: 'POST',\n    headers: {\n      'x-api-key': 'YOUR_ANTHROPIC_API_KEY',\n      'anthropic-version': '2023-06-01',\n      'content-type': 'application/json'\n    },\n    body: JSON.stringify({\n      model: 'claude-sonnet-4-20250514',\n      max_tokens: 2000,\n      system: \"You are a viral content quality judge. Score scripts rigorously. Return ONLY valid JSON, no markdown.\",\n      messages: [{\"role\":\"user\",\"content\":\"Score this video script on 5 dimensions (1-10 each).\\n\\nQuality mode: \" + (d.qualityMode || 'normal') + \"\\nTitle: \" + (d.title || '') + \"\\nHook: \" + (d.hook || '') + \"\\nScript: \" + ((d.voiceover_full || '').slice(0,500)) + \"\\nContent type: \" + (d.content_type || '') + \"\\nTarget: \" + (d.target_audience || '') + \"\\n\\nReturn JSON: {hook_score, emotion_score, info_score, viral_score, cta_score, total_score, quality_grade, needs_rewrite, quality_summary, improvement_areas}\"}]\n    })\n  });\n  const data = await response.json();\n  return [{ json: data }];\n} catch(e) {\n  return [{ json: { content: [{ text: '{}' }], error: e.message } }];\n}"
+      },
+      "name": "Quality Gate Claude",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2280,
+        200
+      ],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const raw = $input.first().json;\nconst txt = raw.content?.[0]?.text || '{}';\nlet q = {};\ntry { const m = txt.match(/\\{[\\s\\S]*\\}/); q = m ? JSON.parse(m[0]) : {}; } catch(e) {}\n\nif (typeof q.total_score !== 'number') q = {\n  hook_score: 8, emotion_score: 7, info_score: 8, viral_score: 7, cta_score: 7,\n  total_score: 37, quality_grade: 'B', needs_rewrite: false,\n  quality_summary: 'Good quality script, minor improvements possible.',\n  improvement_areas: ['Strengthen hook','Add more emotional moments']\n};\n\nconst threshold = (raw.qualityMode === 'high') ? 45 : 40;\nif (typeof q.needs_rewrite === 'undefined') q.needs_rewrite = q.total_score < threshold;\n\nconst inc = $input.first().json;\nreturn [{ json: { ...inc, qualityScore: q, qualityThreshold: threshold, scoreOK: !q.needs_rewrite } }];"
+      },
+      "name": "Parse Quality",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2480,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "qok",
+              "leftValue": "={{ $json.scoreOK }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "name": "Quality OK?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        2680,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const d = $input.first().json;\ntry {\n  const response = await fetch('https://api.anthropic.com/v1/messages', {\n    method: 'POST',\n    headers: {\n      'x-api-key': 'YOUR_ANTHROPIC_API_KEY',\n      'anthropic-version': '2023-06-01',\n      'content-type': 'application/json'\n    },\n    body: JSON.stringify({\n      model: 'claude-sonnet-4-20250514',\n      max_tokens: 3000,\n      system: \"You are an expert viral scriptwriter. Improve scripts to be more engaging and shareable. Return ONLY valid JSON, no markdown.\",\n      messages: [{\"role\":\"user\",\"content\":\"Rewrite this script to score above \" + (d.qualityThreshold || 40) + \"/50.\\n\\nImprovement areas: \" + JSON.stringify((d.qualityScore && d.qualityScore.improvement_areas) || []) + \"\\nCurrent score: \" + ((d.qualityScore && d.qualityScore.total_score) || 0) + \"/50\\nTitle: \" + (d.title || '') + \"\\nHook: \" + (d.hook || '') + \"\\nScript: \" + (d.voiceover_full || '') + \"\\n\\nReturn JSON: {title, hook, voiceover_full, ai_video_prompts, script_segments, description, tags, thumbnail_prompt, thumbnail_text, rewrite_notes}\"}]\n    })\n  });\n  const data = await response.json();\n  return [{ json: data }];\n} catch(e) {\n  return [{ json: { content: [{ text: '{}' }], error: e.message } }];\n}"
+      },
+      "name": "Rewrite Script Claude",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2880,
+        80
+      ],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const raw = $input.first().json;\nconst txt = raw.content?.[0]?.text || '{}';\nlet rw = {};\ntry { const m = txt.match(/\\{[\\s\\S]*\\}/); rw = m ? JSON.parse(m[0]) : {}; } catch(e) {}\n\nconst inc = $input.first().json;\nreturn [{ json: {\n  ...inc,\n  title: rw.title || inc.title,\n  hook: rw.hook || inc.hook,\n  voiceover_full: rw.voiceover_full || inc.voiceover_full,\n  ai_video_prompts: rw.ai_video_prompts || inc.ai_video_prompts,\n  script_segments: rw.script_segments || inc.script_segments,\n  description: rw.description || inc.description,\n  tags: rw.tags || inc.tags,\n  thumbnail_prompt: rw.thumbnail_prompt || inc.thumbnail_prompt,\n  thumbnail_text: rw.thumbnail_text || inc.thumbnail_text,\n  wasRewritten: true,\n  rewriteNotes: rw.rewrite_notes || 'Script improved for quality'\n}}];"
+      },
+      "name": "Parse Rewrite",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3080,
+        80
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const d = $input.first().json;\ntry {\n  const response = await fetch('https://api.anthropic.com/v1/messages', {\n    method: 'POST',\n    headers: {\n      'x-api-key': 'YOUR_ANTHROPIC_API_KEY',\n      'anthropic-version': '2023-06-01',\n      'content-type': 'application/json'\n    },\n    body: JSON.stringify({\n      model: 'claude-haiku-4-5-20251001',\n      max_tokens: 512,\n      system: \"You are a voice casting director. Analyze script mood and select the optimal ElevenLabs voice. Return ONLY valid JSON, no markdown.\",\n      messages: [{\"role\":\"user\",\"content\":\"Select the best voice for this video.\\n\\nVoices: Taksh (aF6JALq9R6tXwCczjhKH)=Hindi, Bradford=serious/dark, Max (Gfpl8Yo74Is0W6cPUWWT)=documentary default, Samantha (uIZsnBL0YK1S5j69bAih)=emotional\\n\\nLanguage: \" + (d.lang || 'english') + \"\\nTopic: \" + (d.topic || '') + \"\\nMood: \" + (d.mood || d.content_type || '') + \"\\nHook: \" + ((d.hook || '').slice(0,100)) + \"\\n\\nIf hindi, always choose Taksh. Return JSON: {voice_name, voice_id, mood_detected, profile_used, stability, similarity_boost, style, speed, voice_reasoning}\"}]\n    })\n  });\n  const data = await response.json();\n  return [{ json: data }];\n} catch(e) {\n  return [{ json: { content: [{ text: '{}' }], error: e.message } }];\n}"
+      },
+      "name": "Voice Intelligence Claude",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3280,
+        200
+      ],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const raw = $input.first().json;\nconst txt = raw.content?.[0]?.text || '{}';\nlet v = {};\ntry { const m = txt.match(/\\{[\\s\\S]*\\}/); v = m ? JSON.parse(m[0]) : {}; } catch(e) {}\n\nconst lang = raw.lang || '';\n\nif (!v.voice_id) {\n  const isHindi = lang === 'hindi';\n  v = {\n    voice_name: isHindi ? 'Taksh' : 'Max',\n    voice_id: isHindi ? (raw.ELEVENLABS_VOICE_TAKSH || 'aF6JALq9R6tXwCczjhKH') : (raw.ELEVENLABS_VOICE_MAX || 'Gfpl8Yo74Is0W6cPUWWT'),\n    mood_detected: 'educational',\n    profile_used: 'educational',\n    stability: 0.35,\n    similarity_boost: 0.75,\n    style: 0.20,\n    speed: 1.0,\n    voice_reasoning: 'Default educational voice selected'\n  };\n}\n\n// Update memory with voice choice\ntry {\n  const stored = $getWorkflowStaticData('global');\n  const memory = stored.videoMemory || {};\n  if (!memory.voicePerformance) memory.voicePerformance = {};\n  const vn = v.voice_name;\n  if (!memory.voicePerformance[vn]) memory.voicePerformance[vn] = { count: 0, avgScore: 0 };\n  memory.voicePerformance[vn].count += 1;\n  if (!memory.bestVoicePerNiche) memory.bestVoicePerNiche = {};\n  const niche = raw.niche || 'general';\n  if (!memory.bestVoicePerNiche[niche]) memory.bestVoicePerNiche[niche] = vn;\n  stored.videoMemory = memory;\n} catch(e) {}\n\nconst inc = $input.first().json;\nreturn [{ json: { ...inc, selectedVoice: v } }];"
+      },
+      "name": "Parse Voice Selection",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3480,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "hindi",
+              "leftValue": "={{ $json.lang }}",
+              "rightValue": "hindi",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "name": "Is Hindi?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        3680,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const d = $input.first().json;\ntry {\n  const response = await fetch('https://api.anthropic.com/v1/messages', {\n    method: 'POST',\n    headers: {\n      'x-api-key': 'YOUR_ANTHROPIC_API_KEY',\n      'anthropic-version': '2023-06-01',\n      'content-type': 'application/json'\n    },\n    body: JSON.stringify({\n      model: 'claude-sonnet-4-20250514',\n      max_tokens: 2000,\n      system: \"You are a professional Hindi translator and content creator. Return ONLY valid JSON, no markdown.\",\n      messages: [{\"role\":\"user\",\"content\":\"Translate to Hindi (Devanagari).\\n\\nTitle: \" + (d.title || '') + \"\\nVoiceover: \" + (d.voiceover_full || '') + \"\\nDescription: \" + (d.description || '') + \"\\nHook: \" + (d.hook || '') + \"\\n\\nReturn JSON: {hindi_title, hindi_voiceover, hindi_description, hindi_hook, transliterated_title, tags_hindi, translation_quality_notes}\"}]\n    })\n  });\n  const data = await response.json();\n  return [{ json: data }];\n} catch(e) {\n  return [{ json: { content: [{ text: '{}' }], error: e.message } }];\n}"
+      },
+      "name": "Language Translator Claude",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3880,
+        100
+      ],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const d = $input.first().json;\ntry {\n  const response = await fetch('https://api.anthropic.com/v1/messages', {\n    method: 'POST',\n    headers: {\n      'x-api-key': 'YOUR_ANTHROPIC_API_KEY',\n      'anthropic-version': '2023-06-01',\n      'content-type': 'application/json'\n    },\n    body: JSON.stringify({\n      model: 'claude-sonnet-4-20250514',\n      max_tokens: 4000,\n      system: \"You are a cinematic drama scriptwriter and film director. Return ONLY valid JSON, no markdown.\",\n      messages: [{\"role\":\"user\",\"content\":\"Create a CINEMATIC DRAMA script for: '\" + (d.dramaTitle || d.customTopic || '') + \"'\\n\\n\" + (d.seriesName ? \"SERIES: \" + d.seriesName + \" - Episode \" + (d.seriesEp || \"1\") : \"\") + \"\\n\\nCreate 60-90 second drama with opening hook, character intro, dramatic build, climax, powerful close.\\n\\nReturn JSON: {drama_title, series_episode, opening_line, narrator_voice, scenes, closing_line, music_mood, total_duration, drama_tags, drama_description, character_consistency_notes}\"}]\n    })\n  });\n  const data = await response.json();\n  return [{ json: data }];\n} catch(e) {\n  return [{ json: { content: [{ text: '{}' }], error: e.message } }];\n}"
+      },
+      "name": "Drama Script Generator",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1880,
+        600
+      ],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const raw = $input.first().json;\nconst txt = raw.content?.[0]?.text || '{}';\nlet drama = {};\ntry { const m = txt.match(/\\{[\\s\\S]*\\}/); drama = m ? JSON.parse(m[0]) : {}; } catch(e) {}\n\nif (!drama.drama_title) drama = {\n  drama_title: raw.dramaTitle || 'Untitled Drama',\n  opening_line: 'In a world where nothing is as it seems...',\n  scenes: [{scene_num:1, action:'Opening', dialogue:'The story begins', visual_prompt_for_kling: 'cinematic establishing shot dramatic lighting', duration_seconds: 15}],\n  closing_line: 'Some stories were never meant to be told.',\n  music_mood: 'Epic orchestral, building tension',\n  total_duration: 75\n};\n\n// Save drama data for approval flow\ntry {\n  const stored = $getWorkflowStaticData('global');\n  stored.pendingDrama = { ...drama, chatId: raw.chatId };\n} catch(e) {}\n\nconst sceneSummary = (drama.scenes || []).slice(0,3).map((s,i) => `Scene ${s.scene_num}: ${s.action} - \"${(s.dialogue||'').slice(0,50)}\"`).join('\\n');\nconst approvalMsg = `DRAMA SCRIPT READY\\n\\nTitle: ${drama.drama_title}\\n${raw.seriesName ? 'Series: ' + raw.seriesName + ' Ep' + raw.seriesEp : ''}\\nDuration: ${drama.total_duration}s\\nMusic: ${drama.music_mood}\\n\\nOpening: \"${drama.opening_line}\"\\n\\nScenes Preview:\\n${sceneSummary}\\n\\nClosing: \"${drama.closing_line}\"\\n\\nSend PUBLISH to approve and produce this drama.\\nSend REJECT to discard.`;\n\nconst inc = $input.first().json;\nreturn [{ json: { ...inc, dramaData: drama, dramaApprovalMsg: approvalMsg } }];"
+      },
+      "name": "Parse Drama Script",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2080,
+        600
+      ]
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.chatId || '8370599696' }}",
+        "text": "={{ $json.dramaApprovalMsg }}",
+        "additionalFields": {
+          "reply_markup": "{\"inline_keyboard\":[[{\"text\":\"APPROVE & PRODUCE\",\"callback_data\":\"PUBLISH\"},{\"text\":\"REJECT\",\"callback_data\":\"REJECT\"}]]}"
+        }
+      },
+      "name": "Send Drama Approval",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        2280,
+        600
+      ],
+      "credentials": {
+        "telegramApi": {
+          "id": "TELEGRAM_BOT_TOKEN",
+          "name": "Telegram Bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const d = $input.first().json;\ntry {\n  const response = await fetch('https://api.anthropic.com/v1/messages', {\n    method: 'POST',\n    headers: {\n      'x-api-key': 'YOUR_ANTHROPIC_API_KEY',\n      'anthropic-version': '2023-06-01',\n      'content-type': 'application/json'\n    },\n    body: JSON.stringify({\n      model: 'claude-haiku-4-5-20251001',\n      max_tokens: 600,\n      system: \"Write a compelling 30-second voiceover script. Return ONLY valid JSON, no markdown.\",\n      messages: [{\"role\":\"user\",\"content\":\"Write a 30-second voice test script about: '\" + (d.voicetestTopic || 'ancient civilizations') + \"'\\n\\nDramatic, 80-90 words. Return JSON: {script_text, word_count, topic_used}\"}]\n    })\n  });\n  const data = await response.json();\n  return [{ json: data }];\n} catch(e) {\n  return [{ json: { content: [{ text: '{}' }], error: e.message } }];\n}"
+      },
+      "name": "VoiceTest Script Generator",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1880,
+        820
+      ],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const raw = $input.first().json;\nconst txt = raw.content?.[0]?.text || '{}';\nlet vt = {};\ntry { const m = txt.match(/\\{[\\s\\S]*\\}/); vt = m ? JSON.parse(m[0]) : {}; } catch(e) {}\n\nconst script = vt.script_text || `In the shadows of history, empires rise and fall. Ancient civilizations held secrets that modern science is only beginning to understand. From the pyramids of Egypt to the temples of Angkor Wat, each stone tells a story of human ambition, spiritual devotion, and architectural mastery that we still cannot fully replicate today. Some mysteries were never meant to be solved.`;\n\n// Save for bridge nodes\ntry {\n  const stored = $getWorkflowStaticData('global');\n  stored.voicetestData = {\n    script: script,\n    topic: raw.voicetestTopic || 'ancient civilizations',\n    chatId: raw.chatId || '8370599696'\n  };\n} catch(e) {}\n\nconst inc = $input.first().json;\nreturn [{ json: { ...inc, voicetestScript: script, voicetestWordCount: vt.word_count || 85 } }];"
+      },
+      "name": "Parse VoiceTest Script",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2080,
+        820
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://api.elevenlabs.io/v1/text-to-speech/aF6JALq9R6tXwCczjhKH/stream",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "xi-api-key",
+              "value": "YOUR_ELEVENLABS_KEY"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "text",
+              "value": "={{ $json.voicetestScript }}"
+            },
+            {
+              "name": "model_id",
+              "value": "eleven_turbo_v2_5"
+            },
+            {
+              "name": "voice_settings",
+              "value": "{\"stability\":0.35,\"similarity_boost\":0.75,\"style\":0.25,\"use_speaker_boost\":true}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file",
+              "outputPropertyName": "voiceover_audio"
+            }
+          }
+        },
+        "method": "POST"
+      },
+      "name": "VoiceTest Taksh Audio",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2280,
+        820
+      ],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "chatId": "8370599696",
+        "operation": "sendAudio",
+        "binaryData": true,
+        "binaryPropertyName": "voiceover_audio",
+        "additionalFields": {
+          "caption": "Voice 1: TAKSH - Hindi / Warm Cultural\nStability: 0.35 | Style: 0.25\nBest for: South Asian topics, cultural content"
+        }
+      },
+      "name": "Send Taksh Audio",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        2480,
+        820
+      ],
+      "credentials": {
+        "telegramApi": {
+          "id": "TELEGRAM_BOT_TOKEN",
+          "name": "Telegram Bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const stored = $getWorkflowStaticData('global');\nconst vtData = stored.voicetestData || {};\nreturn [{ json: { voicetestScript: vtData.script || '', chatId: vtData.chatId || '', voicetestTopic: vtData.topic || '' } }];"
+      },
+      "name": "VoiceTest Bridge",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2680,
+        820
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://api.elevenlabs.io/v1/text-to-speech/Gfpl8Yo74Is0W6cPUWWT/stream",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "xi-api-key",
+              "value": "YOUR_ELEVENLABS_KEY"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "text",
+              "value": "={{ $json.voicetestScript }}"
+            },
+            {
+              "name": "model_id",
+              "value": "eleven_turbo_v2_5"
+            },
+            {
+              "name": "voice_settings",
+              "value": "{\"stability\":0.35,\"similarity_boost\":0.75,\"style\":0.20,\"use_speaker_boost\":true}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file",
+              "outputPropertyName": "voiceover_audio"
+            }
+          }
+        },
+        "method": "POST"
+      },
+      "name": "VoiceTest Max Audio",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2880,
+        820
+      ],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "chatId": "8370599696",
+        "operation": "sendAudio",
+        "binaryData": true,
+        "binaryPropertyName": "voiceover_audio",
+        "additionalFields": {
+          "caption": "Voice 3: MAX - Documentary / Educational (DEFAULT)\nStability: 0.35 | Style: 0.20\nBest for: General content, documentaries, science"
+        }
+      },
+      "name": "Send Max Audio",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        3080,
+        820
+      ],
+      "credentials": {
+        "telegramApi": {
+          "id": "TELEGRAM_BOT_TOKEN",
+          "name": "Telegram Bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "8370599696",
+        "text": "=Voice Test Complete for: '{{ $json.voicetestTopic || 'your topic' }}'\n\nYou heard:\n1. TAKSH - Hindi/Warm cultural narrator\n3. MAX - Documentary/Educational (current default)\n\nAlso available (auto-selected by mood):\n2. BRADFORD - Serious, political, dark topics\n4. SAMANTHA - Emotional, true crime, intimate\n\nVoice auto-selects based on script mood.\nTo override: include VOICE:1 VOICE:2 VOICE:3 or VOICE:4 in your TOPIC command.\n\nSend VOICE REPORT to see performance stats.",
+        "additionalFields": {}
+      },
+      "name": "Send VoiceTest Instructions",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        3280,
+        820
+      ],
+      "credentials": {
+        "telegramApi": {
+          "id": "TELEGRAM_BOT_TOKEN",
+          "name": "Telegram Bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const d = $input.first().json;\nconst budgetMode = d.budgetMode || 'auto';\nconst action = d.action || '';\n\nconst aiTopicKeywords = [\n  'history','ancient','historical','medieval','empire','war','battle','rome','egypt',\n  'scifi','space','future','robot','fantasy','mythology','gods','viking','samurai',\n  'crime','mystery','conspiracy','mughal','aztec','horror','paranormal','forbidden',\n  'civilization','dynasty','revolution','kingdom','pharaoh','sultan','warrior'\n];\n\nconst pexelsTopicKeywords = [\n  'business','office','technology','computer','phone','social media','app',\n  'nature','ocean','mountain','forest','city','travel','food','cooking',\n  'fitness','gym','yoga','meditation','motivation','health','science','finance'\n];\n\nconst combined = ((d.topic || '') + ' ' + (d.niche || '') + ' ' + (d.content_type || '')).toLowerCase();\nconst topicNeedsAI = aiTopicKeywords.some(k => combined.includes(k));\nconst topicHasFreeFootage = pexelsTopicKeywords.some(k => combined.includes(k));\n\nlet useAIVideo = false, usePremiumKling = false, videoStrategy = 'pexels_free';\nlet estimatedCost = '$0.00';\n\nif (budgetMode === 'free') {\n  useAIVideo = false;\n  videoStrategy = 'pexels_free';\n} else if (action === 'DRAMA' || d.dramaTitle) {\n  useAIVideo = true;\n  usePremiumKling = true;\n  videoStrategy = 'kling_premium';\n  estimatedCost = '$1.88';\n} else if (topicNeedsAI && !topicHasFreeFootage) {\n  useAIVideo = true;\n  usePremiumKling = false;\n  videoStrategy = 'veo_free_primary';\n  estimatedCost = '$0.00';\n} else {\n  useAIVideo = false;\n  videoStrategy = 'pexels_free';\n}\n\nreturn [{ json: { ...d, useAIVideo, usePremiumKling, videoStrategy, estimatedCost } }];"
+      },
+      "name": "Smart Video Router v6",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4080,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "aiv",
+              "leftValue": "={{ $json.useAIVideo }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "name": "AI Video or Pexels?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        4280,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/veo-3.0-generate-preview:generateVideo",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-goog-api-key",
+              "value": "YOUR_GOOGLE_AI_STUDIO_KEY"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "prompt",
+              "value": "={{ ($json.ai_video_prompts || [])[0] || 'cinematic documentary scene dramatic lighting 4K' }}, photorealistic no text no watermark 9:16 vertical"
+            },
+            {
+              "name": "generationConfig",
+              "value": "{\"durationSeconds\": 8, \"aspectRatio\": \"9:16\"}"
+            }
+          ]
+        },
+        "options": {},
+        "method": "POST"
+      },
+      "name": "Google Veo Free - Clip 1",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        4480,
+        60
+      ],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/veo-3.0-generate-preview:generateVideo",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-goog-api-key",
+              "value": "YOUR_GOOGLE_AI_STUDIO_KEY"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "prompt",
+              "value": "={{ ($json.ai_video_prompts || [])[1] || 'cinematic scene dramatic atmosphere 4K' }}, photorealistic no text no watermark 9:16 vertical"
+            },
+            {
+              "name": "generationConfig",
+              "value": "{\"durationSeconds\": 8, \"aspectRatio\": \"9:16\"}"
+            }
+          ]
+        },
+        "options": {},
+        "method": "POST"
+      },
+      "name": "Google Veo Free - Clip 2",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        4480,
+        160
+      ],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "url": "https://api.seedance.tv/v1/video/generate",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer skip"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "prompt",
+              "value": "={{ ($json.ai_video_prompts || [])[2] || 'cinematic dramatic scene 4K' }}, no text 9:16 vertical"
+            },
+            {
+              "name": "duration",
+              "value": 8
+            },
+            {
+              "name": "aspect_ratio",
+              "value": "9:16"
+            }
+          ]
+        },
+        "options": {},
+        "method": "POST"
+      },
+      "name": "Seedance Free Fallback",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        4480,
+        260
+      ],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "url": "https://fal.run/fal-ai/kling-video/v1.6/pro/text-to-video",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Key YOUR_FAL_AI_KEY"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "prompt",
+              "value": "={{ ($json.ai_video_prompts || [])[0] }}, cinematic 4K photorealistic no text no watermark"
+            },
+            {
+              "name": "duration",
+              "value": "5"
+            },
+            {
+              "name": "aspect_ratio",
+              "value": "9:16"
+            },
+            {
+              "name": "negative_prompt",
+              "value": "blurry low quality cartoon text watermark"
+            }
+          ]
+        },
+        "options": {},
+        "method": "POST"
+      },
+      "name": "Kling Premium Clip 1",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        4480,
+        360
+      ],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "url": "https://fal.run/fal-ai/kling-video/v1.6/pro/text-to-video",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Key YOUR_FAL_AI_KEY"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "prompt",
+              "value": "={{ ($json.ai_video_prompts || [])[1] }}, cinematic 4K photorealistic no text no watermark"
+            },
+            {
+              "name": "duration",
+              "value": "5"
+            },
+            {
+              "name": "aspect_ratio",
+              "value": "9:16"
+            },
+            {
+              "name": "negative_prompt",
+              "value": "blurry low quality cartoon text watermark"
+            }
+          ]
+        },
+        "options": {},
+        "method": "POST"
+      },
+      "name": "Kling Premium Clip 2",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        4480,
+        460
+      ],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "url": "https://fal.run/fal-ai/kling-video/v1.6/pro/text-to-video",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Key YOUR_FAL_AI_KEY"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "prompt",
+              "value": "={{ ($json.ai_video_prompts || [])[2] }}, cinematic 4K photorealistic no text no watermark"
+            },
+            {
+              "name": "duration",
+              "value": "5"
+            },
+            {
+              "name": "aspect_ratio",
+              "value": "9:16"
+            },
+            {
+              "name": "negative_prompt",
+              "value": "blurry low quality cartoon text watermark"
+            }
+          ]
+        },
+        "options": {},
+        "method": "POST"
+      },
+      "name": "Kling Premium Clip 3",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        4480,
+        560
+      ],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "url": "https://api.pexels.com/videos/search",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "YOUR_PEXELS_API_KEY"
+            }
+          ]
+        },
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "query",
+              "value": "={{ ($json.pexels_search_terms || ['cinematic documentary'])[0] }}"
+            },
+            {
+              "name": "per_page",
+              "value": "15"
+            },
+            {
+              "name": "orientation",
+              "value": "portrait"
+            },
+            {
+              "name": "size",
+              "value": "medium"
+            }
+          ]
+        },
+        "options": {},
+        "method": "GET"
+      },
+      "name": "Pexels Stock Footage",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        4480,
+        700
+      ],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const all = $input.all();\nconst base = all[0].json;\nlet videoUrls = [], videoSource = 'pexels_free';\n\nconst klingItems = all.filter(i => i.json.video?.url || (i.json.url && i.json.url.includes('mp4')) || i.json.videos?.[0]);\nconst veoItems = all.filter(i => i.json.name && (i.json.name.includes('generation') || i.json.state === 'SUCCEEDED'));\nconst seedanceItems = all.filter(i => i.json.video_url || i.json.output_url);\n\nif (klingItems.length > 0) {\n  videoUrls = klingItems.map(i => i.json.video?.url || i.json.url || '').filter(Boolean);\n  videoSource = 'kling_premium';\n} else if (veoItems.length > 0) {\n  videoUrls = veoItems.map(i => i.json.video?.uri || i.json.videoUri || '').filter(Boolean);\n  videoSource = 'google_veo_free';\n} else if (seedanceItems.length > 0) {\n  videoUrls = seedanceItems.map(i => i.json.video_url || i.json.output_url || '').filter(Boolean);\n  videoSource = 'seedance_free';\n} else {\n  const videos = (base.videos || []).slice(0,6);\n  videoUrls = videos.map(v => {\n    const f = v.video_files?.find(f => f.quality === 'hd') || v.video_files?.[0];\n    return f?.link || '';\n  }).filter(Boolean);\n  videoSource = 'pexels_free';\n}\n\nconst result = { ...base, videoUrls, videoSource, videoCount: videoUrls.length };\n\ntry {\n  const stored = $getWorkflowStaticData('global');\n  stored.pendingVideoData = result;\n} catch(e) {}\n\nreturn [{ json: result }];"
+      },
+      "name": "Merge Video Assets",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4700,
+        350
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://api.openai.com/v1/images/generations",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer YOUR_OPENAI_API_KEY"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "model",
+              "value": "dall-e-3"
+            },
+            {
+              "name": "prompt",
+              "value": "={{ ($json.thumbnail_prompt || 'cinematic dramatic scene') + ', dramatic side lighting from below or side, single clear main subject dominating 60% of frame, extreme high contrast, intense emotion visible on face or subject, bold graphic composition, ultra detailed photorealistic 8K, no text, no watermark, top YouTube creator CTR style' }}"
+            },
+            {
+              "name": "n",
+              "value": 1
+            },
+            {
+              "name": "size",
+              "value": "1792x1024"
+            },
+            {
+              "name": "quality",
+              "value": "hd"
+            }
+          ]
+        },
+        "options": {},
+        "method": "POST"
+      },
+      "name": "DALL-E Thumbnail A",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        4900,
+        350
+      ],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const stored = $getWorkflowStaticData('global');\nconst baseData = stored.pendingVideoData || {};\nconst thumbAUrl = $input.first().json.data?.[0]?.url || '';\nstored.thumbAUrl = thumbAUrl;\nreturn [{ json: {\n  ...baseData,\n  thumbAUrl,\n  thumbnailPromptCurrent: baseData.thumbnail_prompt_b || (baseData.thumbnail_prompt + ', dramatic close-up face expression, intense emotion, different angle')\n} }];"
+      },
+      "name": "Carry Data After A",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        5100,
+        350
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://api.openai.com/v1/images/generations",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer YOUR_OPENAI_API_KEY"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "model",
+              "value": "dall-e-3"
+            },
+            {
+              "name": "prompt",
+              "value": "={{ $json.thumbnail_prompt_b || $json.thumbnail_prompt + ' variation 2, different angle, close-up dramatic' }}"
+            },
+            {
+              "name": "n",
+              "value": 1
+            },
+            {
+              "name": "size",
+              "value": "1792x1024"
+            },
+            {
+              "name": "quality",
+              "value": "hd"
+            }
+          ]
+        },
+        "options": {},
+        "method": "POST"
+      },
+      "name": "DALL-E Thumbnail B",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        5300,
+        350
+      ],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const stored = $getWorkflowStaticData('global');\nconst d = $input.first().json;\nconst thumbUrl = d.url || d.data?.[0]?.url || '';\nstored.thumbBUrl = thumbUrl;\nreturn [{ json: { ...(stored.pendingVideoData || {}), thumbBUrl: stored.thumbBUrl, thumbCUrl: stored.thumbCUrl, thumbAUrl: stored.thumbAUrl } }];"
+      },
+      "name": "Carry Data After B",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        5500,
+        350
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://api.openai.com/v1/images/generations",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer YOUR_OPENAI_API_KEY"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "model",
+              "value": "dall-e-3"
+            },
+            {
+              "name": "prompt",
+              "value": "={{ $json.thumbnail_prompt_c || $json.thumbnail_prompt + ' variation 3, epic wide cinematic shot' }}"
+            },
+            {
+              "name": "n",
+              "value": 1
+            },
+            {
+              "name": "size",
+              "value": "1792x1024"
+            },
+            {
+              "name": "quality",
+              "value": "hd"
+            }
+          ]
+        },
+        "options": {},
+        "method": "POST"
+      },
+      "name": "DALL-E Thumbnail C",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        5700,
+        350
+      ],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const stored = $getWorkflowStaticData('global');\nconst baseData = stored.pendingVideoData || {};\nconst d = $input.first().json;\nconst thumbCUrl = d.thumbCUrl || stored.thumbCUrl || d.url || d.data?.[0]?.url || '';\nif (thumbCUrl && !stored.thumbCUrl) stored.thumbCUrl = thumbCUrl;\nreturn [{ json: {\n  ...baseData,\n  thumbAUrl: stored.thumbAUrl || '',\n  thumbBUrl: stored.thumbBUrl || '',\n  thumbCUrl,\n  allThumbnails: [stored.thumbAUrl || '', stored.thumbBUrl || '', thumbCUrl].filter(u => u)\n} }];"
+      },
+      "name": "Collect All Thumbnails",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        5900,
+        350
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const d = $input.first().json;\ntry {\n  const response = await fetch('https://api.anthropic.com/v1/messages', {\n    method: 'POST',\n    headers: {\n      'x-api-key': 'YOUR_ANTHROPIC_API_KEY',\n      'anthropic-version': '2023-06-01',\n      'content-type': 'application/json'\n    },\n    body: JSON.stringify({\n      model: 'claude-haiku-4-5-20251001',\n      max_tokens: 300,\n      system: \"You are a visual content director who optimizes for YouTube CTR. Return ONLY valid JSON, no markdown.\",\n      messages: [{\"role\":\"user\",\"content\":\"Score these 3 YouTube thumbnail concepts on 4 dimensions each (1-10). Pick winner with highest total.\\n\\nVideo title: \" + (d.title || '') + \"\\nHook: \" + (d.hook || '') + \"\\nMood/niche: \" + (d.mood || d.content_type || '') + \"\\n\\nA_concept: '\" + (d.thumbnail_prompt || 'dramatic cinematic') + \"'\\nB_concept: '\" + (d.thumbnail_prompt_b || 'close-up dramatic') + \"'\\nC_concept: '\" + (d.thumbnail_prompt_c || 'epic wide shot') + \"'\\n\\nScore each on:\\n- clickability: instantly stops scroll, creates burning curiosity\\n- contrast: light vs dark pops on any background\\n- emotion: visible emotion/reaction triggers viewer response\\n- clarity_small: stays clear and recognizable at 120px icon size\\n\\nReturn JSON: {winner, winner_number, click_score, a_scores:{clickability,contrast,emotion,clarity_small,total}, b_scores:{clickability,contrast,emotion,clarity_small,total}, c_scores:{clickability,contrast,emotion,clarity_small,total}, reasoning, thumbnail_text_should_be_at}\"}]\n    })\n  });\n  const data = await response.json();\n  return [{ json: data }];\n} catch(e) {\n  return [{ json: { content: [{ text: '{}' }], error: e.message } }];\n}"
+      },
+      "name": "Claude Picks Best Thumbnail",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        6100,
+        350
+      ],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const raw = $input.first().json;\nconst txt = raw.content?.[0]?.text || '{}';\nlet pick = {};\ntry { const m = txt.match(/\\{[\\s\\S]*\\}/); pick = m ? JSON.parse(m[0]) : {}; } catch(e) {}\n\nif (!pick.winner) pick = { winner: 'A', winner_number: 1, click_score: 8, reasoning: 'Dramatic original angle chosen as default' };\n\nconst stored = $getWorkflowStaticData('global');\nconst thumbNum = pick.winner_number || 1;\nconst thumbUrl = thumbNum === 2 ? (stored.thumbBUrl || stored.thumbAUrl || '') :\n                 thumbNum === 3 ? (stored.thumbCUrl || stored.thumbAUrl || '') :\n                 (stored.thumbAUrl || '');\n\nstored.selectedThumbUrl = thumbUrl;\nstored.selectedThumbNumber = thumbNum;\nstored.thumbnailPick = pick;\n\nconst inc = raw;\nreturn [{ json: {\n  ...inc,\n  thumbUrl,\n  thumbAUrl: stored.thumbAUrl || '',\n  thumbBUrl: stored.thumbBUrl || '',\n  thumbCUrl: stored.thumbCUrl || '',\n  selectedThumb: thumbNum,\n  aiPickedThumb: thumbNum,\n  thumbnailClickScore: pick.click_score,\n  thumbnailReasoning: pick.reasoning\n} }];"
+      },
+      "name": "Parse Thumbnail Pick",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        6300,
+        350
+      ]
+    },
+    {
+      "parameters": {
+        "chatId": "8370599696",
+        "text": "=3 Thumbnails Generated for: {{ $json.title }}\n\nOption 1 (Dramatic):\n{{ $json.thumbAUrl }}\n\nOption 2 (Close-Up):\n{{ $json.thumbBUrl || 'Not generated' }}\n\nOption 3 (Epic Wide):\n{{ $json.thumbCUrl || 'Not generated' }}\n\nClaude's Pick: Option {{ $json.aiPickedThumb }} (Score {{ $json.thumbnailClickScore }}/10)\nReason: {{ $json.thumbnailReasoning }}\n\nTo override: Reply THUMBNAIL:1, THUMBNAIL:2, or THUMBNAIL:3",
+        "additionalFields": {}
+      },
+      "name": "Send 3 Thumbnails to Telegram",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        6500,
+        350
+      ],
+      "credentials": {
+        "telegramApi": {
+          "id": "TELEGRAM_BOT_TOKEN",
+          "name": "Telegram Bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const stored = $getWorkflowStaticData('global');\nconst baseData = stored.pendingVideoData || {};\nconst thumbUrl = stored.selectedThumbUrl || stored.thumbAUrl || '';\nreturn [{ json: { ...baseData, thumbUrl } }];"
+      },
+      "name": "Prep ElevenLabs",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        6700,
+        350
+      ]
+    },
+    {
+      "parameters": {
+        "url": "='https://api.elevenlabs.io/v1/text-to-speech/' + (($json.selectedVoice && $json.selectedVoice.voice_id) || 'Gfpl8Yo74Is0W6cPUWWT') + '/stream'",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "xi-api-key",
+              "value": "YOUR_ELEVENLABS_KEY"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "text",
+              "value": "={{ $json.lang === 'hindi' ? ($json.hindi_voiceover || $json.voiceover_full) : $json.voiceover_full }}"
+            },
+            {
+              "name": "model_id",
+              "value": "eleven_turbo_v2_5"
+            },
+            {
+              "name": "voice_settings",
+              "value": "=JSON.stringify({stability: ($json.selectedVoice && $json.selectedVoice.stability) || 0.35, similarity_boost: ($json.selectedVoice && $json.selectedVoice.similarity_boost) || 0.75, style: ($json.selectedVoice && $json.selectedVoice.style) || 0.20, use_speaker_boost: true, speed: ($json.selectedVoice && $json.selectedVoice.speed) || 1.0})"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file",
+              "outputPropertyName": "voiceover_audio"
+            }
+          }
+        },
+        "method": "POST"
+      },
+      "name": "ElevenLabs Voiceover v6",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        6900,
+        350
+      ],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const stored = $getWorkflowStaticData('global');\nconst d = stored.pendingVideoData || {};\nconst thumbUrl = stored.selectedThumbUrl || d.thumbUrl || '';\n\nconst vids = d.videoUrls || [];\nconst segs = d.script_segments || [];\nconst dur = d.estimated_duration || 58;\nconst isShorts = dur <= 70;\nconst clipDur = isShorts ? 2.5 : 4.5;\nconst channelName = (d.memory || {}).channelName || 'Empires Untold';\nconst thumbnailText = (d.thumbnail_text || '').toUpperCase().split(' ').slice(0, 5).join(' ');\nconst hookText = (d.hook || '').split(' ').slice(0, 8).join(' ').toUpperCase() || 'THE TRUTH THEY NEVER TOLD YOU';\nconst textPos = d.thumbnail_text_position === 'top' ? '11%' : '83%';\n\n// Cinematic video clips with transitions - whip pan left/right/up\nconst clipCount = Math.min(vids.length, Math.ceil(dur / clipDur) + 1);\nconst videoClips = vids.slice(0, clipCount).map((url, i) => ({\n  type: 'video', track: 1,\n  time: parseFloat((i * clipDur).toFixed(2)),\n  duration: parseFloat((clipDur + 0.4).toFixed(2)),\n  source: url, fit: 'cover', volume: '0%',\n  ...(i > 0 ? { enter: { effect: 'slide', duration: 0.2, direction: ['right', 'left', 'up', 'down'][i % 4] } } : {})\n}));\n\n// Hook caption - first 3 seconds, full screen dramatic, high impact\nconst hookCaption = {\n  type: 'text', track: 3, time: 0.1, duration: 2.7,\n  text: hookText,\n  font_family: 'Montserrat', font_weight: '900', font_size: '86px',\n  fill_color: '#FFFFFF', stroke_color: '#000000', stroke_width: '5px',\n  x_alignment: '50%', y_alignment: '50%', width: '90%',\n  background_color: 'rgba(0,0,0,0.55)',\n  background_x_padding: '20px', background_y_padding: '14px',\n  enter: { effect: 'scale', duration: 0.3, easing: 'bounce-out' },\n  exit: { effect: 'fade', duration: 0.2 }\n};\n\n// Cinematic captions - Montserrat 900, word-by-word style animation\nconst captionClips = segs.slice(0, 14).map((seg, i) => {\n  const startTime = parseFloat((3 + i * ((dur - 4) / Math.max(segs.length, 1))).toFixed(2));\n  const segDur = parseFloat(((dur - 4) / Math.max(segs.length, 1) - 0.05).toFixed(2));\n  const text = (seg.caption || (seg.text || '').slice(0, 75) || '').trim();\n  const hasNumbers = /\\d/.test(text);\n  const isKeyWord = /\\b(NEVER|SECRET|TRUTH|HIDDEN|REAL|ONLY|FIRST|FINAL|WARNING|BREAKING|SHOCKING|EXPOSED|REVEALED)\\b/i.test(text);\n\n  return {\n    type: 'text', track: 3,\n    time: startTime, duration: Math.max(segDur, 0.5),\n    text,\n    font_family: 'Montserrat', font_weight: '900',\n    font_size: hasNumbers ? '80px' : (isKeyWord ? '72px' : '64px'),\n    fill_color: hasNumbers ? '#FFD700' : (isKeyWord ? '#FF4B4B' : '#FFFFFF'),\n    stroke_color: '#000000', stroke_width: '3px',\n    x_alignment: '50%', y_alignment: '85%', width: '88%',\n    enter: { effect: 'scale', duration: 0.1, easing: 'bounce-out' },\n    exit: { effect: 'fade', duration: 0.07 }\n  };\n});\n\n// Channel watermark\nconst watermark = {\n  type: 'text', track: 4, time: 0, duration: dur,\n  text: channelName, font_family: 'Montserrat', font_weight: '700', font_size: '22px',\n  fill_color: '#FFFFFF', x_alignment: '50%', y_alignment: '4%',\n  opacity: '80%', background_color: 'rgba(0,0,0,0.35)',\n  background_x_padding: '12px', background_y_padding: '4px'\n};\n\n// Subscribe pulse animation - red button bounce in\nconst subscribeAnim = {\n  type: 'text', track: 5,\n  time: parseFloat(Math.max(dur - 6, 0).toFixed(2)), duration: 6,\n  text: 'SUBSCRIBE', font_family: 'Montserrat', font_weight: '900', font_size: '52px',\n  fill_color: '#FFFFFF', background_color: '#FF0000',\n  background_x_padding: '24px', background_y_padding: '12px',\n  x_alignment: '50%', y_alignment: '50%',\n  enter: { effect: 'scale', duration: 0.5, easing: 'bounce-out' }\n};\n\n// Thumbnail text overlay - Montserrat Black, white + black stroke, top or bottom third\nconst thumbTextEl = thumbnailText ? {\n  type: 'text', track: 6, time: 0, duration: dur,\n  text: thumbnailText, font_family: 'Montserrat', font_weight: '900', font_size: '68px',\n  fill_color: '#FFFFFF', stroke_color: '#000000', stroke_width: '4px',\n  x_alignment: '50%', y_alignment: textPos, width: '84%'\n} : null;\n\nconst elements = [...videoClips, hookCaption, ...captionClips, watermark, subscribeAnim];\nif (thumbTextEl) elements.push(thumbTextEl);\n\nconst creatomateSource = {\n  output_format: 'mp4', width: 1080, height: 1920, frame_rate: 30, duration: dur,\n  elements\n};\n\nreturn [{ json: { ...d, thumbUrl, creatomateSource } }];"
+      },
+      "name": "Build Render Payload v6",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        7100,
+        350
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://api.creatomate.com/v1/renders",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer YOUR_CREATOMATE_KEY"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "source",
+              "value": "={{ JSON.stringify($json.creatomateSource) }}"
+            }
+          ]
+        },
+        "options": {},
+        "method": "POST"
+      },
+      "name": "Creatomate Render",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        7300,
+        350
+      ],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "amount": 90,
+        "unit": "seconds"
+      },
+      "name": "Wait 90s Render",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        7500,
+        350
+      ]
+    },
+    {
+      "parameters": {
+        "url": "='https://api.creatomate.com/v1/renders/' + (($json[0] && $json[0].id) || $json.id || '')",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer YOUR_CREATOMATE_KEY"
+            }
+          ]
+        },
+        "options": {},
+        "method": "GET"
+      },
+      "name": "Poll Render Status",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        7700,
+        350
+      ],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "url": "https://api.telegram.org/botmYOUR_TELEGRAM_BOT_TOKEN/getFile",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "file_id",
+              "value": "={{ $json.fileId }}"
+            }
+          ]
+        },
+        "options": {},
+        "method": "POST"
+      },
+      "name": "Get Telegram File URL",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        4080,
+        700
+      ],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const d = $input.first().json;\nconst filePath = d.result?.file_path || '';\nconst downloadUrl = `https://api.telegram.org/file/botmYOUR_TELEGRAM_BOT_TOKEN/${filePath}`;\nconst editInstructions = d.editInstructions || 'enhance quality, add cinematic captions, add dramatic feel, make viral';\nreturn [{ json: { ...d, userVideoUrl: downloadUrl, editInstructions, isUserVideo: true, videoStrategy: 'user_uploaded', estimatedCost: '$0.00' } }];"
+      },
+      "name": "Prepare User Video",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4280,
+        700
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const d = $input.first().json;\ntry {\n  const response = await fetch('https://api.anthropic.com/v1/messages', {\n    method: 'POST',\n    headers: {\n      'x-api-key': 'YOUR_ANTHROPIC_API_KEY',\n      'anthropic-version': '2023-06-01',\n      'content-type': 'application/json'\n    },\n    body: JSON.stringify({\n      model: 'claude-sonnet-4-20250514',\n      max_tokens: 2000,\n      system: \"You are a viral video editor and director. Return ONLY valid JSON, no markdown.\",\n      messages: [{\"role\":\"user\",\"content\":\"User wants: \" + (d.editInstructions || 'enhance and make viral') + \"\\n\\nCreate video enhancement package. Return JSON: {title, description, tags, captions, overlay_text, thumbnail_text, suggested_music_mood, color_grade_style, viral_hooks}\"}]\n    })\n  });\n  const data = await response.json();\n  return [{ json: data }];\n} catch(e) {\n  return [{ json: { content: [{ text: '{}' }], error: e.message } }];\n}"
+      },
+      "name": "Claude Video Editor Brain",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4480,
+        700
+      ],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const raw = $input.first().json;\nconst txt = raw.content?.[0]?.text || '{}';\nlet d = {};\ntry { const m = txt.match(/\\{[\\s\\S]*\\}/); d = m ? JSON.parse(m[0]) : {}; } catch(e) {}\nif (!d.title) d = { title: 'You Need To See This', description: 'Watch this incredible video.', tags: ['viral','trending','shorts'], captions: [], thumbnail_text: 'MUST WATCH' };\n\nconst inc = raw;\nconst captions = d.captions || [];\nconst dur = 58;\n\nconst captionClips = captions.slice(0,8).map((c, i) => ({\n  type: 'text', track: 3,\n  time: c.start_time || (i * 7),\n  duration: (c.end_time - c.start_time) || 6,\n  text: c.text || '', font_family: 'Montserrat', font_weight: '900', font_size: '64px',\n  fill_color: '#FFFFFF', stroke_color: '#000000', stroke_width: '3px',\n  x_alignment: '50%', y_alignment: '85%', width: '88%'\n}));\n\nconst subscribeEnd = { type: 'text', track: 5, time: dur - 6, duration: 6, text: 'SUBSCRIBE', font_family: 'Montserrat', font_weight: '900', font_size: '52px', fill_color: '#FFFFFF', background_color: '#FF0000', background_x_padding: '24px', background_y_padding: '12px', x_alignment: '50%', y_alignment: '50%' };\n\nconst creatomateSource = {\n  output_format: 'mp4', width: 1080, height: 1920, frame_rate: 30, duration: dur,\n  elements: [\n    { type: 'video', track: 1, time: 0, source: inc.userVideoUrl, fit: 'cover' },\n    ...captionClips,\n    subscribeEnd\n  ]\n};\n\ntry {\n  const stored = $getWorkflowStaticData('global');\n  stored.pendingVideoData = { ...inc, ...d, isUserVideo: true, estimatedCost: '$0.00' };\n} catch(e) {}\n\nreturn [{ json: { ...inc, ...d, creatomateSource } }];"
+      },
+      "name": "Build User Video Edit",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4680,
+        700
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const inputData = $input.first().json;\nconst stored = $getWorkflowStaticData('global');\nconst d = { ...inputData, ...(stored.pendingVideoData || {}) };\nstored.pendingVideoData = { ...(stored.pendingVideoData || {}), ...inputData };\n\nlet videoUrl = '';\nif (Array.isArray(inputData)) {\n  videoUrl = inputData[0]?.url || inputData[0]?.snapshot_url || '';\n} else {\n  videoUrl = inputData.url || inputData.snapshot_url || '';\n}\nif (!videoUrl) videoUrl = d.videoUrl || 'Render in progress...';\n\nstored.pendingVideo = {\n  ...d,\n  videoUrl,\n  thumbUrl: stored.selectedThumbUrl || d.thumbUrl || '',\n  thumbAUrl: stored.thumbAUrl || '',\n  thumbBUrl: stored.thumbBUrl || '',\n  thumbCUrl: stored.thumbCUrl || '',\n  readyAt: new Date().toISOString()\n};\n\nconst voiceName = (d.selectedVoice || {}).voice_name || 'Max';\nconst qualityTotal = (d.qualityScore || {}).total_score || '?';\nconst hookScore = (d.qualityScore || {}).hook_score || '?';\nconst viralScore = (d.qualityScore || {}).viral_score || '?';\nconst trendScore = (d.trend || {}).trend_score || '?';\nconst wasRewritten = d.wasRewritten ? ' [auto-improved]' : '';\nconst srcLabel = d.videoStrategy === 'kling_premium' ? 'Kling 3.0 Premium'\n  : d.videoStrategy === 'google_veo_free' ? 'Google Veo (Free)'\n  : d.isUserVideo ? 'Your Uploaded Video' : 'Pexels (Free)';\n\nconst msg = `VIDEO READY FOR REVIEW\\n\\n` +\n  `Title: ${d.title || 'Untitled'}\\n` +\n  `Hook: \"${d.hook || ''}\"\\n\\n` +\n  `Quality: ${qualityTotal}/50${wasRewritten} | Hook: ${hookScore} | Viral: ${viralScore}\\n` +\n  `Trend Score: ${trendScore}/10\\n` +\n  `Voice: ${voiceName} | Source: ${srcLabel}\\n` +\n  `Cost: ${d.estimatedCost || '$0.00'}\\n\\n` +\n  `Preview: ${videoUrl}\\n` +\n  `Thumbnail: ${stored.selectedThumbUrl || 'N/A'}\\n\\n` +\n  `3 thumbnails sent above. Reply THUMBNAIL:1/2/3 to override.\\n\\n` +\n  `PUBLISH - Post all 7 platforms\\nREJECT - Discard\\nEDIT: [notes] - Redo`;\n\nreturn [{ json: { ...d, videoUrl, approvalMsg: msg, pendingApproval: true } }];"
+      },
+      "name": "Build Approval Message v6",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        7900,
+        350
+      ]
+    },
+    {
+      "parameters": {
+        "chatId": "8370599696",
+        "text": "={{ $json.approvalMsg }}",
+        "additionalFields": {
+          "reply_markup": "{\"inline_keyboard\":[[{\"text\":\"PUBLISH ALL\",\"callback_data\":\"PUBLISH\"},{\"text\":\"REJECT\",\"callback_data\":\"REJECT\"}],[{\"text\":\"THUMBNAIL:1\",\"callback_data\":\"THUMBNAIL:1\"},{\"text\":\"THUMBNAIL:2\",\"callback_data\":\"THUMBNAIL:2\"},{\"text\":\"THUMBNAIL:3\",\"callback_data\":\"THUMBNAIL:3\"}]]}"
+        }
+      },
+      "name": "Telegram Approval",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        8100,
+        280
+      ],
+      "credentials": {
+        "telegramApi": {
+          "id": "TELEGRAM_BOT_TOKEN",
+          "name": "Telegram Bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "='https://graph.facebook.com/v18.0/' + ($env.WHATSAPP_PHONE_NUMBER_ID || 'skip') + '/messages'",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer skip"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "messaging_product",
+              "value": "whatsapp"
+            },
+            {
+              "name": "to",
+              "value": "skip"
+            },
+            {
+              "name": "type",
+              "value": "text"
+            },
+            {
+              "name": "text",
+              "value": "={\"body\":\"VIDEO READY: {{ $json.title }} | {{ $json.videoUrl }} | Quality: {{ ($json.qualityScore||{}).total_score||'?' }}/50 | Reply PUBLISH or REJECT\"}"
+            }
+          ]
+        },
+        "options": {},
+        "method": "POST"
+      },
+      "name": "WhatsApp Approval",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        8100,
+        420
+      ],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const stored = $getWorkflowStaticData('global');\nconst pending = stored.pendingVideo || {};\nif (!pending.videoUrl && !pending.readyAt) {\n  return [{ json: { error: true, errorMsg: 'No pending video found. Create a video first, then pick thumbnail.' } }];\n}\nconst inc = $input.first().json;\nreturn [{ json: { ...inc, ...pending } }];"
+      },
+      "name": "Load Pending Video",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        8300,
+        280
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "video",
+        "operation": "upload",
+        "title": "={{ $json.lang === 'hindi' ? ($json.hindi_title || $json.title) : $json.title }}",
+        "description": "={{ $json.lang === 'hindi' ? ($json.hindi_description || $json.description) : $json.description }}\n\n{{ ($json.tags || []).map(t => '#' + t).join(' ') }}",
+        "tags": "={{ ($json.tags || []).join(',') }}",
+        "categoryId": "22",
+        "privacyStatus": "public",
+        "videoFile": "data",
+        "additionalFields": {
+          "selfDeclaredMadeForKids": false,
+          "thumbnailUrl": "={{ $json.thumbUrl || '' }}"
+        }
+      },
+      "name": "YouTube Upload",
+      "type": "n8n-nodes-base.youTube",
+      "typeVersion": 1,
+      "position": [
+        8500,
+        100
+      ],
+      "credentials": {
+        "youTubeOAuth2Api": {
+          "id": "YOUTUBE_OAUTH",
+          "name": "YouTube"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "='https://graph.facebook.com/v18.0/' + ($env.INSTAGRAM_ACCOUNT_ID || 'skip') + '/media'",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "media_type",
+              "value": "REELS"
+            },
+            {
+              "name": "video_url",
+              "value": "={{ $json.videoUrl }}"
+            },
+            {
+              "name": "caption",
+              "value": "={{ $json.title }}\n\n{{ $json.description }}\n\n{{ ($json.tags || []).slice(0,15).map(t => '#' + t).join(' ') }}"
+            },
+            {
+              "name": "cover_url",
+              "value": "={{ $json.thumbUrl || '' }}"
+            },
+            {
+              "name": "access_token",
+              "value": "skip"
+            }
+          ]
+        },
+        "options": {},
+        "method": "POST"
+      },
+      "name": "Instagram Reels",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        8500,
+        220
+      ],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "url": "https://open-api.tiktok.com/share/video/upload/",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer skip"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "source_info",
+              "value": "={\"source\":\"PULL_FROM_URL\",\"url\":\"{{ $json.videoUrl }}\"}"
+            },
+            {
+              "name": "title",
+              "value": "={{ $json.title }} {{ ($json.tags || []).slice(0,5).map(t => '#' + t).join(' ') }}"
+            },
+            {
+              "name": "privacy_level",
+              "value": "PUBLIC"
+            }
+          ]
+        },
+        "options": {},
+        "method": "POST"
+      },
+      "name": "TikTok Upload",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        8500,
+        340
+      ],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "url": "='https://graph.facebook.com/v18.0/' + ($env.FACEBOOK_PAGE_ID || 'skip') + '/videos'",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "file_url",
+              "value": "={{ $json.videoUrl }}"
+            },
+            {
+              "name": "description",
+              "value": "={{ $json.title }}\n\n{{ $json.description }}\n\n{{ ($json.tags || []).map(t => '#' + t).join(' ') }}"
+            },
+            {
+              "name": "access_token",
+              "value": "skip"
+            },
+            {
+              "name": "published",
+              "value": true
+            }
+          ]
+        },
+        "options": {},
+        "method": "POST"
+      },
+      "name": "Facebook Reels",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        8500,
+        460
+      ],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "url": "https://adsapi.snapchat.com/v1/media",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer skip"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "media",
+              "value": "={\"name\":\"{{ $json.title }}\",\"type\":\"VIDEO\",\"ad_account_id\":\"skip\"}"
+            },
+            {
+              "name": "media_upload_url",
+              "value": "={{ $json.videoUrl }}"
+            }
+          ]
+        },
+        "options": {},
+        "method": "POST"
+      },
+      "name": "Snapchat Spotlight",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        8500,
+        580
+      ],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "url": "https://www.googleapis.com/upload/youtube/v3/videos?part=snippet,status",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer skip"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "snippet",
+              "value": "={\"title\":\"#Shorts {{ $json.title }}\",\"description\":\"{{ $json.description }}\",\"tags\":{{ JSON.stringify($json.tags || []) }},\"categoryId\":\"22\"}"
+            },
+            {
+              "name": "status",
+              "value": "{\"privacyStatus\":\"public\",\"selfDeclaredMadeForKids\":false}"
+            }
+          ]
+        },
+        "options": {},
+        "method": "POST"
+      },
+      "name": "YouTube Shorts",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        8500,
+        700
+      ],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": "1a19vOcl7hujJGTEmeZDjJwvOUfQ8xQ0IDYFvecHwY1Q",
+        "sheetName": "Video Log",
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Date": "={{ $now.format('YYYY-MM-DD') }}",
+            "Title": "={{ $json.title }}",
+            "Topic": "={{ $json.topic || $json.customTopic || 'Auto' }}",
+            "Language": "={{ $json.lang || 'english' }}",
+            "Voice": "={{ ($json.selectedVoice || {}).voice_name || 'Max' }}",
+            "Source": "={{ $json.videoStrategy }}",
+            "Quality_Score": "={{ ($json.qualityScore || {}).total_score || 'N/A' }}",
+            "Trend_Score": "={{ ($json.trend || {}).trend_score || 'N/A' }}",
+            "Cost": "={{ $json.estimatedCost || '$0.00' }}",
+            "Video_URL": "={{ $json.videoUrl }}",
+            "Thumbnail": "={{ $json.thumbUrl }}",
+            "Was_Rewritten": "={{ $json.wasRewritten ? 'YES' : 'NO' }}",
+            "Status": "PUBLISHED",
+            "Tags": "={{ ($json.tags || []).join(',') }}"
+          }
+        },
+        "options": {}
+      },
+      "name": "Log Video to Sheets",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.4,
+      "position": [
+        8700,
+        400
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "GOOGLE_SHEETS_OAUTH",
+          "name": "Google Sheets"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": "1a19vOcl7hujJGTEmeZDjJwvOUfQ8xQ0IDYFvecHwY1Q",
+        "sheetName": "Voice Analytics",
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Date": "={{ $now.format('YYYY-MM-DD') }}",
+            "Topic": "={{ $json.topic || $json.customTopic || 'Auto' }}",
+            "Niche": "={{ $json.niche || 'general' }}",
+            "Language": "={{ $json.lang || 'english' }}",
+            "Voice_Used": "={{ ($json.selectedVoice || {}).voice_name || 'Max' }}",
+            "Voice_ID": "={{ ($json.selectedVoice || {}).voice_id || '' }}",
+            "Mood_Detected": "={{ ($json.selectedVoice || {}).mood_detected || '' }}",
+            "Stability": "={{ ($json.selectedVoice || {}).stability || 0.35 }}",
+            "Style": "={{ ($json.selectedVoice || {}).style || 0.20 }}",
+            "Speed": "={{ ($json.selectedVoice || {}).speed || 1.0 }}",
+            "Quality_Score": "={{ ($json.qualityScore || {}).total_score || 'N/A' }}",
+            "Video_Source": "={{ $json.videoStrategy || '' }}"
+          }
+        },
+        "options": {}
+      },
+      "name": "Log Voice Analytics",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.4,
+      "position": [
+        8900,
+        300
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "GOOGLE_SHEETS_OAUTH",
+          "name": "Google Sheets"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const d = $input.first().json;\nconst stored = $getWorkflowStaticData('global');\nconst hasKling = (d.videoStrategy || '').includes('kling');\nconst has3Thumbs = !d.isUserVideo;\n\nconst costs = {\n  date: new Date().toISOString().split('T')[0],\n  month: new Date().toISOString().slice(0,7),\n  title: d.title || 'Unknown',\n  anthropic: 0.09,\n  elevenlabs: 0.11,\n  openai: has3Thumbs ? 0.12 : 0.00,\n  fal: hasKling ? 1.88 : 0.00,\n  creatomate: 0.10,\n  total: 0\n};\ncosts.total = costs.anthropic + costs.elevenlabs + costs.openai + costs.fal + costs.creatomate;\n\nif (!stored.monthlyCost) stored.monthlyCost = 0;\nif (!stored.costLog) stored.costLog = [];\nstored.monthlyCost = parseFloat((stored.monthlyCost + costs.total).toFixed(2));\nstored.costLog.unshift(costs);\nif (stored.costLog.length > 500) stored.costLog = stored.costLog.slice(0,500);\n\nreturn [{ json: { ...d, costEntry: costs, monthlyCostTotal: stored.monthlyCost } }];"
+      },
+      "name": "Log Cost Tracker",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        9100,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": "1a19vOcl7hujJGTEmeZDjJwvOUfQ8xQ0IDYFvecHwY1Q",
+        "sheetName": "Cost Tracker",
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Date": "={{ $json.costEntry.date }}",
+            "Month": "={{ $json.costEntry.month }}",
+            "Video_Title": "={{ $json.costEntry.title }}",
+            "Anthropic": "={{ $json.costEntry.anthropic }}",
+            "ElevenLabs": "={{ $json.costEntry.elevenlabs }}",
+            "OpenAI_DALLE": "={{ $json.costEntry.openai }}",
+            "fal_ai_Kling": "={{ $json.costEntry.fal }}",
+            "Creatomate": "={{ $json.costEntry.creatomate }}",
+            "Total_Video": "={{ $json.costEntry.total }}",
+            "Monthly_Running": "={{ $json.monthlyCostTotal }}"
+          }
+        },
+        "options": {}
+      },
+      "name": "Log Cost to Sheets",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.4,
+      "position": [
+        9300,
+        300
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "GOOGLE_SHEETS_OAUTH",
+          "name": "Google Sheets"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "budget",
+              "leftValue": "={{ $json.monthlyCostTotal }}",
+              "rightValue": 80,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "name": "Check Monthly Budget",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        9500,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "chatId": "8370599696",
+        "text": "=BUDGET ALERT\n\nMonthly spend: ${{ $json.monthlyCostTotal }}\nLimit: $80\n\nConsider pausing non-essential videos.\nSend PAUSE to halt scheduled runs.\nAuto-pause triggers at $100.",
+        "additionalFields": {}
+      },
+      "name": "Budget Alert Telegram",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        9700,
+        200
+      ],
+      "credentials": {
+        "telegramApi": {
+          "id": "TELEGRAM_BOT_TOKEN",
+          "name": "Telegram Bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "8370599696",
+        "text": "=Published to all 7 platforms!\n\nTitle: {{ $json.title }}\nVoice: {{ ($json.selectedVoice||{}).voice_name || 'Max' }}\nSource: {{ $json.videoStrategy }}\nQuality: {{ ($json.qualityScore||{}).total_score || 'N/A' }}/50\nCost This Video: ${{ ($json.costEntry||{}).total || '~0.42' }}\nMonthly Total: ${{ $json.monthlyCostTotal || '?' }}\n\nYouTube + YouTube Shorts\nTikTok\nInstagram Reels\nFacebook Reels\nSnapchat Spotlight\n\nLogged to Google Sheets.",
+        "additionalFields": {}
+      },
+      "name": "Success Notify v6",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        9700,
+        350
+      ],
+      "credentials": {
+        "telegramApi": {
+          "id": "TELEGRAM_BOT_TOKEN",
+          "name": "Telegram Bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "='https://graph.facebook.com/v18.0/' + ($env.WHATSAPP_PHONE_NUMBER_ID || 'skip') + '/messages'",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer skip"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "messaging_product",
+              "value": "whatsapp"
+            },
+            {
+              "name": "to",
+              "value": "skip"
+            },
+            {
+              "name": "type",
+              "value": "text"
+            },
+            {
+              "name": "text",
+              "value": "={\"body\":\"Published! {{ $json.title }} | Cost: ${{ ($json.costEntry||{}).total || '~0.42' }} | Monthly: ${{ $json.monthlyCostTotal || '?' }} | 7 platforms done\"}"
+            }
+          ]
+        },
+        "options": {},
+        "method": "POST"
+      },
+      "name": "WhatsApp Success",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        9900,
+        350
+      ],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const d = $input.first().json;\ntry {\n  const response = await fetch('https://api.anthropic.com/v1/messages', {\n    method: 'POST',\n    headers: {\n      'x-api-key': 'YOUR_ANTHROPIC_API_KEY',\n      'anthropic-version': '2023-06-01',\n      'content-type': 'application/json'\n    },\n    body: JSON.stringify({\n      model: 'claude-sonnet-4-20250514',\n      max_tokens: 1500,\n      system: \"You are a YouTube channel analytics advisor. Return ONLY valid JSON, no markdown.\",\n      messages: [{\"role\":\"user\",\"content\":\"Weekly YouTube trend analysis for Empires Untold + viral content channels. Date: \" + new Date().toISOString().split('T')[0] + \"\\n\\nChannel stats: videos=\" + ((d.memory && d.memory.totalVideos) || 0) + \", best_niche=\" + ((d.memory && d.memory.bestNiche) || 'general') + \", topics=\" + JSON.stringify((d.memory && d.memory.recentTopics) || []) + \"\\n\\nAnalyze what top creators in South Asian history, viral facts, and documentary niches are doing THIS WEEK:\\n1. Thumbnail style: which compositions, lighting, colors drive CTR\\n2. Caption style: size, animation, color patterns that retain viewers\\n3. Hook style: opening line patterns that stop scroll\\n4. Video length optimal for Shorts vs long-form\\n5. Title patterns getting clicks right now\\n\\nReturn JSON: {report_date, total_videos, best_niche, monthly_cost_estimate, top_trending_topics, voice_insights, content_recommendations, weekly_summary, action_items, trending_thumbnail_style, trending_caption_style, trending_hook_style, optimal_video_length_seconds, title_pattern_this_week, update_defaults}\"}]\n    })\n  });\n  const data = await response.json();\n  return [{ json: data }];\n} catch(e) {\n  return [{ json: { content: [{ text: '{}' }], error: e.message } }];\n}"
+      },
+      "name": "Generate Weekly Report",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        480,
+        2200
+      ],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const raw = $input.first().json;\nconst txt = raw.content?.[0]?.text || '{}';\nlet r = {};\ntry { const m = txt.match(/\\{[\\s\\S]*\\}/); r = m ? JSON.parse(m[0]) : {}; } catch(e) {}\n\nif (!r.weekly_summary) r = {\n  report_date: new Date().toISOString().split('T')[0],\n  total_videos: '?',\n  monthly_cost_estimate: '$0',\n  top_trending_topics: ['Ancient civilizations','AI developments','True crime','Space exploration','Geopolitics'],\n  weekly_summary: 'Weekly report generated. Keep creating consistent content.',\n  content_recommendations: ['Focus on trending historical topics','Try emotional storytelling','Use Samantha voice for true crime'],\n  action_items: ['Review voice analytics','Check trending niches','Plan next week topics']\n};\n\nconst stored = $getWorkflowStaticData('global');\nconst memory = stored.videoMemory || {};\nconst monthlyCost = stored.monthlyCost || 0;\nconst voicePerf = memory.voicePerformance || {};\n\nlet voiceSummary = Object.entries(voicePerf).map(([v,d]) => `${v}: ${d.count||0} videos`).join(', ') || 'No voice data yet';\n\nconst weeklyMsg = `WEEKLY REPORT - ${r.report_date}\\n\\n` +\n  `Videos Created: ${memory.totalVideos || 0} all time\\n` +\n  `Monthly Spend: $${monthlyCost.toFixed(2)}/$80 budget\\n` +\n  `Best Niche: ${memory.bestPerformingNiche || 'general'}\\n\\n` +\n  `TOP TRENDING THIS WEEK:\\n${(r.top_trending_topics || []).map((t,i) => `${i+1}. ${t}`).join('\\n')}\\n\\n` +\n  `VOICE PERFORMANCE:\\n${voiceSummary}\\n\\n` +\n  `RECOMMENDATIONS:\\n${(r.content_recommendations || []).map((c,i) => `${i+1}. ${c}`).join('\\n')}\\n\\n` +\n  `ACTION ITEMS:\\n${(r.action_items || []).map((a,i) => `${i+1}. ${a}`).join('\\n')}`;\n\nreturn [{ json: { ...raw, weeklyReport: r, weeklyMsg } }];"
+      },
+      "name": "Parse Weekly Report",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        680,
+        2200
+      ]
+    },
+    {
+      "parameters": {
+        "chatId": "8370599696",
+        "text": "={{ $json.weeklyMsg }}",
+        "additionalFields": {}
+      },
+      "name": "Send Weekly Report",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        880,
+        2200
+      ],
+      "credentials": {
+        "telegramApi": {
+          "id": "TELEGRAM_BOT_TOKEN",
+          "name": "Telegram Bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const d = $input.first().json;\ntry {\n  const response = await fetch('https://api.anthropic.com/v1/messages', {\n    method: 'POST',\n    headers: {\n      'x-api-key': 'YOUR_ANTHROPIC_API_KEY',\n      'anthropic-version': '2023-06-01',\n      'content-type': 'application/json'\n    },\n    body: JSON.stringify({\n      model: 'claude-haiku-4-5-20251001',\n      max_tokens: 600,\n      system: \"You are a voice and content trend analyst. Return ONLY valid JSON, no markdown.\",\n      messages: [{\"role\":\"user\",\"content\":\"Today: \" + new Date().toISOString().split('T')[0] + \"\\n\\nAnalyze trending voice narration styles on YouTube/TikTok. Voices: Taksh(Hindi), Bradford(dark), Max(documentary), Samantha(emotional).\\n\\nReturn JSON: {trending_style, trend_description, recommended_voice, recommend_setting_update, suggested_stability, suggested_style_score, update_message}\"}]\n    })\n  });\n  const data = await response.json();\n  return [{ json: data }];\n} catch(e) {\n  return [{ json: { content: [{ text: '{}' }], error: e.message } }];\n}"
+      },
+      "name": "Voice Trend Detector",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        480,
+        2400
+      ],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const raw = $input.first().json;\nconst txt = raw.content?.[0]?.text || '{}';\nlet vt = {};\ntry { const m = txt.match(/\\{[\\s\\S]*\\}/); vt = m ? JSON.parse(m[0]) : {}; } catch(e) {}\nif (!vt.trending_style) vt = { trending_style: 'Documentary narration', trend_description: 'Hushed, informative, documentary style continues trending', recommended_voice: 'Max', recommend_setting_update: false, update_message: 'Current settings optimal. No change needed.' };\n\nconst trendMsg = `VOICE TREND ALERT - ${new Date().toISOString().split('T')[0]}\\n\\nTrending Style: ${vt.trending_style}\\n${vt.trend_description}\\n\\nRecommended Voice: ${vt.recommended_voice}\\n${vt.update_message}\\n\\n${vt.recommend_setting_update ? 'Reply YES to update voice settings automatically.' : 'No action needed this week.'}`;\n\nreturn [{ json: { ...raw, voiceTrendData: vt, trendMsg } }];"
+      },
+      "name": "Parse Voice Trend",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        680,
+        2400
+      ]
+    },
+    {
+      "parameters": {
+        "chatId": "8370599696",
+        "text": "={{ $json.trendMsg }}",
+        "additionalFields": {}
+      },
+      "name": "Send Voice Trend",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        880,
+        2400
+      ],
+      "credentials": {
+        "telegramApi": {
+          "id": "TELEGRAM_BOT_TOKEN",
+          "name": "Telegram Bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const stored = $getWorkflowStaticData('global');\nconst checkTime = new Date().toISOString();\n\nconst keys = [\n  ['ANTHROPIC_API_KEY', 'YOUR_ANTHROPIC_API_KEY'],\n  ['ELEVENLABS_API_KEY', 'YOUR_ELEVENLABS_KEY'],\n  ['FAL_AI_API_KEY', 'YOUR_FAL_AI_KEY'],\n  ['OPENAI_API_KEY', 'YOUR_OPENAI_API_KEY'],\n  ['CREATOMATE_API_KEY', 'YOUR_CREATOMATE_KEY'],\n  ['PEXELS_API_KEY', 'YOUR_PEXELS_API_KEY'],\n  ['GOOGLE_AI_STUDIO_API_KEY', 'YOUR_GOOGLE_AI_STUDIO_KEY'],\n  ['TELEGRAM_BOT_TOKEN', 'mYOUR_TELEGRAM_BOT_TOKEN'],\n  ['TELEGRAM_CHAT_ID', '8370599696'],\n  ['GOOGLE_SHEETS_ID', '1a19vOcl7hujJGTEmeZDjJwvOUfQ8xQ0IDYFvecHwY1Q'],\n  ['ELEVENLABS_VOICE_TAKSH', 'aF6JALq9R6tXwCczjhKH'],\n  ['ELEVENLABS_VOICE_MAX', 'Gfpl8Yo74Is0W6cPUWWT'],\n  ['ELEVENLABS_VOICE_SAMANTHA', 'uIZsnBL0YK1S5j69bAih']\n];\n\nconst results = keys.map(([name, val]) => ({ name, ok: !!(val && String(val).length > 5), val: val ? `${String(val).slice(0,6)}...` : 'MISSING' }));\nconst missing = results.filter(r => !r.ok);\nconst allOk = missing.length === 0;\n\nstored.lastHealthCheck = checkTime;\nstored.lastApiStatus = allOk ? 'ALL_OK' : `MISSING: ${missing.map(r=>r.name).join(', ')}`;\n\nconst checkDate = checkTime.split('T')[0];\nconst paused = stored.paused ? 'PAUSED' : 'RUNNING';\nconst monthlyCost = stored.monthlyCost || 0;\nconst today = new Date().toISOString().split('T')[0];\nconst todayCount = (stored.dailyCount || {})[today] || 0;\n\nconst healthMsg = `DAILY HEALTH CHECK - ${checkDate}\\nStatus: ${paused} | Today: ${todayCount}/10 videos | Monthly: $${monthlyCost.toFixed(2)}\\n\\nAPI Keys:\\n` +\n  results.map(r => `${r.ok ? 'âœ“' : 'âœ—'} ${r.name}: ${r.ok ? 'OK' : 'MISSING'}`).join('\\n') +\n  `\\n\\nOverall: ${allOk ? 'ALL SYSTEMS OPERATIONAL' : 'ACTION NEEDED'}` +\n  (missing.length > 0 ? `\\nMissing: ${missing.map(r=>r.name).join(', ')}` : '');\n\nreturn [{ json: { healthMsg, allOk, missing: missing.map(r=>r.name), monthlyCost } }];"
+      },
+      "name": "API Health Check",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        480,
+        2600
+      ]
+    },
+    {
+      "parameters": {
+        "chatId": "8370599696",
+        "text": "={{ $json.healthMsg }}",
+        "additionalFields": {}
+      },
+      "name": "Send Health Report",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        680,
+        2600
+      ],
+      "credentials": {
+        "telegramApi": {
+          "id": "TELEGRAM_BOT_TOKEN",
+          "name": "Telegram Bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const raw = $input.first().json;\nconst txt = raw.content?.[0]?.text || '{}';\nlet trans = {};\ntry { const m = txt.match(/\\{[\\s\\S]*\\}/); trans = m ? JSON.parse(m[0]) : {}; } catch(e) {}\nconst stored = $getWorkflowStaticData('global');\nconst base = stored.pendingVideoData || {};\nreturn [{ json: {\n  ...base,\n  hindi_title: trans.hindi_title || base.title,\n  hindi_voiceover: trans.hindi_voiceover || base.voiceover_full,\n  hindi_description: trans.hindi_description || base.description,\n  hindi_hook: trans.hindi_hook || base.hook,\n  transliterated_title: trans.transliterated_title || '',\n  tags_hindi: trans.tags_hindi || base.tags || [],\n  translationDone: true\n}}];"
+      },
+      "name": "Parse Translation",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4080,
+        80
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const stored = $getWorkflowStaticData('global');\nconst memory = stored.videoMemory || {};\nreturn [{ json: { memory, monthlyCost: stored.monthlyCost || 0, checkDate: new Date().toISOString() } }];"
+      },
+      "name": "Load Weekly Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        280,
+        2200
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const d = $input.first().json;\nconst stored = $getWorkflowStaticData('global');\n\nconst score = (d.qualityScore || {}).total_score || 0;\nconst hookScore = (d.qualityScore || {}).hook_score || 0;\nconst viralScore = (d.qualityScore || {}).viral_score || 0;\nconst topic = d.topic || d.customTopic || d.niche || 'general';\n\nif (!stored.topicScores) stored.topicScores = {};\nif (!stored.highScoringTopics) stored.highScoringTopics = [];\n\nconst entry = stored.topicScores[topic] || { count: 0, totalScore: 0, avgScore: 0, lastScore: 0 };\nentry.count += 1;\nentry.totalScore += score;\nentry.avgScore = parseFloat((entry.totalScore / entry.count).toFixed(1));\nentry.lastScore = score;\nstored.topicScores[topic] = entry;\n\nif (score >= 42) {\n  stored.highScoringTopics.unshift({ topic, score, hookScore, viralScore, date: new Date().toISOString().split('T')[0] });\n  if (stored.highScoringTopics.length > 30) stored.highScoringTopics = stored.highScoringTopics.slice(0, 30);\n}\n\nconst topicWords = topic.toLowerCase().split(' ').filter(w => w.length > 4);\nconst similarTopics = (stored.highScoringTopics || [])\n  .filter(t => t.topic !== topic && topicWords.some(w => t.topic.toLowerCase().includes(w)))\n  .slice(0, 3)\n  .map(t => t.topic + ' (scored ' + t.score + ')');\n\nconst topPerformers = Object.entries(stored.topicScores || {})\n  .filter(([, v]) => v.count > 0)\n  .sort((a, b) => b[1].avgScore - a[1].avgScore)\n  .slice(0, 5)\n  .map(([t, v]) => t + ': avg ' + v.avgScore);\n\nreturn [{ json: { ...d, qualityInsights: {\n  topicAvgScore: entry.avgScore,\n  topicVideoCount: entry.count,\n  similarHighTopics: similarTopics,\n  topPerformers\n} } }];"
+      },
+      "name": "Quality Insights Tracker",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2580,
+        80
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const raw = $input.first().json;\nconst r = raw.weeklyReport || {};\nconst stored = $getWorkflowStaticData('global');\n\nif (r.trending_thumbnail_style) stored.trendingThumbnailStyle = r.trending_thumbnail_style;\nif (r.trending_caption_style) stored.trendingCaptionStyle = r.trending_caption_style;\nif (r.trending_hook_style) stored.trendingHookStyle = r.trending_hook_style;\nif (r.optimal_video_length_seconds) stored.optimalVideoLength = r.optimal_video_length_seconds;\nif (r.title_pattern_this_week) stored.titlePatternThisWeek = r.title_pattern_this_week;\nstored.trendingStyle = r.trending_thumbnail_style || stored.trendingStyle || 'dramatic cinematic';\nstored.lastTrendUpdate = new Date().toISOString().split('T')[0];\n\nconst updateMsg = 'TREND UPDATE - ' + stored.lastTrendUpdate + '\\n\\n' +\n  'This week top creators are using:\\n' +\n  'Thumbnail: ' + (r.trending_thumbnail_style || 'No change') + '\\n' +\n  'Captions: ' + (r.trending_caption_style || 'No change') + '\\n' +\n  'Hook style: ' + (r.trending_hook_style || 'No change') + '\\n' +\n  'Optimal length: ' + (r.optimal_video_length_seconds || 'No change') + 's\\n' +\n  'Title pattern: ' + (r.title_pattern_this_week || 'No change') + '\\n\\n' +\n  'Defaults updated automatically for next video.';\n\nreturn [{ json: { ...raw, trendUpdateMsg: updateMsg } }];"
+      },
+      "name": "Trend Style Updater",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        880,
+        2320
+      ]
+    },
+    {
+      "parameters": {
+        "chatId": "8370599696",
+        "text": "={{ $json.trendUpdateMsg }}",
+        "additionalFields": {}
+      },
+      "name": "Send Trend Update",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1080,
+        2320
+      ],
+      "credentials": {
+        "telegramApi": {
+          "id": "TELEGRAM_BOT_TOKEN",
+          "name": "Telegram Bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $json.videoUrl }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file",
+              "outputPropertyName": "data"
+            }
+          }
+        }
+      },
+      "name": "Download Video for YouTube",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        8200,
+        100
+      ],
+      "continueOnFail": false
+    },
+    {
+      "parameters": {
+        "jsCode": "const stored = $getWorkflowStaticData('global');\nconst d = $input.first().json;\nconst thumbUrl = d.url || d.data?.[0]?.url || '';\nstored.thumbCUrl = thumbUrl;\nreturn [{ json: { ...(stored.pendingVideoData || {}), thumbBUrl: stored.thumbBUrl, thumbCUrl: stored.thumbCUrl, thumbAUrl: stored.thumbAUrl } }];"
+      },
+      "name": "Carry Data After C",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        5800,
+        350
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const stored = $getWorkflowStaticData('global');\nconst renderData = $input.first().json;\nconst isArr = Array.isArray(renderData);\nconst item = isArr ? renderData[0] : renderData;\nconst status = (item && item.status) || '';\nconst url = (item && (item.url || item.snapshot_url)) || '';\nconst renderId = (item && item.id) || '';\n\nif (status === 'succeeded' && url) {\n  stored.renderRetryCount = 0;\n  return [{ json: { ...item, url, renderDone: true } }];\n}\n\nif (status === 'failed') {\n  stored.renderRetryCount = 0;\n  const errMsg = (item && item.error_message) || 'Render failed';\n  return [{ json: { error: true, errorMsg: 'Render failed: ' + errMsg, renderId, renderDone: false } }];\n}\n\nconst retryCount = (stored.renderRetryCount || 0) + 1;\nstored.renderRetryCount = retryCount;\n\nif (retryCount >= 5) {\n  stored.renderRetryCount = 0;\n  return [{ json: { error: true, errorMsg: 'Render timed out after 5 retries. Last status: ' + status, renderId, renderDone: false } }];\n}\n\nreturn [{ json: { ...(item || {}), renderDone: false, retryCount, renderId, renderStatus: status } }];"
+      },
+      "name": "Check Render Complete",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        7800,
+        350
+      ]
+    }
+  ],
+  "connections": {
+    "Daily 9AM Auto-Run": {
+      "main": [
+        [
+          {
+            "node": "Command Parser v6",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telegram Listener": {
+      "main": [
+        [
+          {
+            "node": "Command Parser v6",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WhatsApp Webhook": {
+      "main": [
+        [
+          {
+            "node": "Command Parser v6",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Command Parser v6": {
+      "main": [
+        [
+          {
+            "node": "Security Gate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Security Gate": {
+      "main": [
+        [
+          {
+            "node": "Is Blocked?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Blocked?": {
+      "main": [
+        [
+          {
+            "node": "Security Alert",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Is CREATE?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is CREATE?": {
+      "main": [
+        [
+          {
+            "node": "Memory & Taste Tracker v6",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Is MY VIDEO EDIT?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is MY VIDEO EDIT?": {
+      "main": [
+        [
+          {
+            "node": "Get Telegram File URL",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Is PUBLISH?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is PUBLISH?": {
+      "main": [
+        [
+          {
+            "node": "Load Pending Video",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Is DRAMA SERIES?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is DRAMA SERIES?": {
+      "main": [
+        [
+          {
+            "node": "Drama Script Generator",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Is VOICETEST?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is VOICETEST?": {
+      "main": [
+        [
+          {
+            "node": "VoiceTest Script Generator",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Is LANG HINDI?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is LANG HINDI?": {
+      "main": [
+        [
+          {
+            "node": "Memory & Taste Tracker v6",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Is STATUS?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is STATUS?": {
+      "main": [
+        [
+          {
+            "node": "Status Check",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Is PAUSE?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is PAUSE?": {
+      "main": [
+        [
+          {
+            "node": "Pause Handler",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Is RESUME?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is RESUME?": {
+      "main": [
+        [
+          {
+            "node": "Resume Handler",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Is COST?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is COST?": {
+      "main": [
+        [
+          {
+            "node": "Cost Report Handler",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Is SECURITY LOG?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is SECURITY LOG?": {
+      "main": [
+        [
+          {
+            "node": "Security Log Handler",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Is VOICE REPORT?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is VOICE REPORT?": {
+      "main": [
+        [
+          {
+            "node": "Voice Report Handler",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Is THUMBNAIL PICK?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is THUMBNAIL PICK?": {
+      "main": [
+        [
+          {
+            "node": "Thumbnail Pick Handler",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Is REJECT?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is REJECT?": {
+      "main": [
+        [
+          {
+            "node": "Reject Notify",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send Help v6",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Status Check": {
+      "main": [
+        [
+          {
+            "node": "Send Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pause Handler": {
+      "main": [
+        [
+          {
+            "node": "Send Pause Confirm",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Resume Handler": {
+      "main": [
+        [
+          {
+            "node": "Send Resume Confirm",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Cost Report Handler": {
+      "main": [
+        [
+          {
+            "node": "Send Cost Report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Security Log Handler": {
+      "main": [
+        [
+          {
+            "node": "Send Security Log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Voice Report Handler": {
+      "main": [
+        [
+          {
+            "node": "Send Voice Report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Thumbnail Pick Handler": {
+      "main": [
+        [
+          {
+            "node": "Send Thumbnail Confirm",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Trend Check": {
+      "main": [
+        [
+          {
+            "node": "Parse Trend",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Trend": {
+      "main": [
+        [
+          {
+            "node": "Claude Research & Script",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Claude Research & Script": {
+      "main": [
+        [
+          {
+            "node": "Parse Script v6",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Script v6": {
+      "main": [
+        [
+          {
+            "node": "Quality Gate Claude",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Quality Gate Claude": {
+      "main": [
+        [
+          {
+            "node": "Parse Quality",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Quality": {
+      "main": [
+        [
+          {
+            "node": "Quality Insights Tracker",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Quality OK?": {
+      "main": [
+        [
+          {
+            "node": "Voice Intelligence Claude",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Rewrite Script Claude",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Rewrite Script Claude": {
+      "main": [
+        [
+          {
+            "node": "Parse Rewrite",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Rewrite": {
+      "main": [
+        [
+          {
+            "node": "Voice Intelligence Claude",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Voice Intelligence Claude": {
+      "main": [
+        [
+          {
+            "node": "Parse Voice Selection",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Voice Selection": {
+      "main": [
+        [
+          {
+            "node": "Is Hindi?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Hindi?": {
+      "main": [
+        [
+          {
+            "node": "Language Translator Claude",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Smart Video Router v6",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Language Translator Claude": {
+      "main": [
+        [
+          {
+            "node": "Parse Translation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Drama Script Generator": {
+      "main": [
+        [
+          {
+            "node": "Parse Drama Script",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Drama Script": {
+      "main": [
+        [
+          {
+            "node": "Send Drama Approval",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "VoiceTest Script Generator": {
+      "main": [
+        [
+          {
+            "node": "Parse VoiceTest Script",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse VoiceTest Script": {
+      "main": [
+        [
+          {
+            "node": "VoiceTest Taksh Audio",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "VoiceTest Taksh Audio": {
+      "main": [
+        [
+          {
+            "node": "Send Taksh Audio",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Taksh Audio": {
+      "main": [
+        [
+          {
+            "node": "VoiceTest Bridge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "VoiceTest Bridge": {
+      "main": [
+        [
+          {
+            "node": "VoiceTest Max Audio",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "VoiceTest Max Audio": {
+      "main": [
+        [
+          {
+            "node": "Send Max Audio",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Max Audio": {
+      "main": [
+        [
+          {
+            "node": "Send VoiceTest Instructions",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Smart Video Router v6": {
+      "main": [
+        [
+          {
+            "node": "AI Video or Pexels?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Video or Pexels?": {
+      "main": [
+        [
+          {
+            "node": "Google Veo Free - Clip 1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Google Veo Free - Clip 2",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Seedance Free Fallback",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Kling Premium Clip 1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Kling Premium Clip 2",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Kling Premium Clip 3",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Pexels Stock Footage",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Veo Free - Clip 1": {
+      "main": [
+        [
+          {
+            "node": "Merge Video Assets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Veo Free - Clip 2": {
+      "main": [
+        [
+          {
+            "node": "Merge Video Assets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Seedance Free Fallback": {
+      "main": [
+        [
+          {
+            "node": "Merge Video Assets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Kling Premium Clip 1": {
+      "main": [
+        [
+          {
+            "node": "Merge Video Assets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Kling Premium Clip 2": {
+      "main": [
+        [
+          {
+            "node": "Merge Video Assets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Kling Premium Clip 3": {
+      "main": [
+        [
+          {
+            "node": "Merge Video Assets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pexels Stock Footage": {
+      "main": [
+        [
+          {
+            "node": "Merge Video Assets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Video Assets": {
+      "main": [
+        [
+          {
+            "node": "DALL-E Thumbnail A",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DALL-E Thumbnail A": {
+      "main": [
+        [
+          {
+            "node": "Carry Data After A",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Carry Data After A": {
+      "main": [
+        [
+          {
+            "node": "DALL-E Thumbnail B",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DALL-E Thumbnail B": {
+      "main": [
+        [
+          {
+            "node": "Carry Data After B",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Carry Data After B": {
+      "main": [
+        [
+          {
+            "node": "DALL-E Thumbnail C",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DALL-E Thumbnail C": {
+      "main": [
+        [
+          {
+            "node": "Carry Data After C",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Collect All Thumbnails": {
+      "main": [
+        [
+          {
+            "node": "Claude Picks Best Thumbnail",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Claude Picks Best Thumbnail": {
+      "main": [
+        [
+          {
+            "node": "Parse Thumbnail Pick",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Thumbnail Pick": {
+      "main": [
+        [
+          {
+            "node": "Send 3 Thumbnails to Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send 3 Thumbnails to Telegram": {
+      "main": [
+        [
+          {
+            "node": "Prep ElevenLabs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prep ElevenLabs": {
+      "main": [
+        [
+          {
+            "node": "ElevenLabs Voiceover v6",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ElevenLabs Voiceover v6": {
+      "main": [
+        [
+          {
+            "node": "Build Render Payload v6",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Render Payload v6": {
+      "main": [
+        [
+          {
+            "node": "Creatomate Render",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Creatomate Render": {
+      "main": [
+        [
+          {
+            "node": "Wait 90s Render",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait 90s Render": {
+      "main": [
+        [
+          {
+            "node": "Poll Render Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Telegram File URL": {
+      "main": [
+        [
+          {
+            "node": "Prepare User Video",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare User Video": {
+      "main": [
+        [
+          {
+            "node": "Claude Video Editor Brain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Claude Video Editor Brain": {
+      "main": [
+        [
+          {
+            "node": "Build User Video Edit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build User Video Edit": {
+      "main": [
+        [
+          {
+            "node": "Creatomate Render",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Approval Message v6": {
+      "main": [
+        [
+          {
+            "node": "Telegram Approval",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "WhatsApp Approval",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Load Pending Video": {
+      "main": [
+        [
+          {
+            "node": "Instagram Reels",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "TikTok Upload",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Facebook Reels",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Snapchat Spotlight",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "YouTube Shorts",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Download Video for YouTube",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "YouTube Upload": {
+      "main": [
+        [
+          {
+            "node": "Log Video to Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Instagram Reels": {
+      "main": [
+        [
+          {
+            "node": "Log Video to Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "TikTok Upload": {
+      "main": [
+        [
+          {
+            "node": "Log Video to Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Facebook Reels": {
+      "main": [
+        [
+          {
+            "node": "Log Video to Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Snapchat Spotlight": {
+      "main": [
+        [
+          {
+            "node": "Log Video to Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "YouTube Shorts": {
+      "main": [
+        [
+          {
+            "node": "Log Video to Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Video to Sheets": {
+      "main": [
+        [
+          {
+            "node": "Log Voice Analytics",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Voice Analytics": {
+      "main": [
+        [
+          {
+            "node": "Log Cost Tracker",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Cost Tracker": {
+      "main": [
+        [
+          {
+            "node": "Log Cost to Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Cost to Sheets": {
+      "main": [
+        [
+          {
+            "node": "Check Monthly Budget",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Monthly Budget": {
+      "main": [
+        [
+          {
+            "node": "Budget Alert Telegram",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Success Notify v6",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Success Notify v6",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Success Notify v6": {
+      "main": [
+        [
+          {
+            "node": "WhatsApp Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Weekly Report": {
+      "main": [
+        [
+          {
+            "node": "Parse Weekly Report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Weekly Report": {
+      "main": [
+        [
+          {
+            "node": "Send Weekly Report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Voice Trend Detector": {
+      "main": [
+        [
+          {
+            "node": "Parse Voice Trend",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Voice Trend": {
+      "main": [
+        [
+          {
+            "node": "Send Voice Trend",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "API Health Check": {
+      "main": [
+        [
+          {
+            "node": "Send Health Report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Weekly Monday Trigger": {
+      "main": [
+        [
+          {
+            "node": "Load Weekly Data",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Voice Trend Detector",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Daily 8AM Health Check": {
+      "main": [
+        [
+          {
+            "node": "API Health Check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Memory & Taste Tracker v6": {
+      "main": [
+        [
+          {
+            "node": "Trend Check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Translation": {
+      "main": [
+        [
+          {
+            "node": "Smart Video Router v6",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Poll Render Status": {
+      "main": [
+        [
+          {
+            "node": "Check Render Complete",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Load Weekly Data": {
+      "main": [
+        [
+          {
+            "node": "Generate Weekly Report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Quality Insights Tracker": {
+      "main": [
+        [
+          {
+            "node": "Quality OK?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Weekly Report": {
+      "main": [
+        [
+          {
+            "node": "Trend Style Updater",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Trend Style Updater": {
+      "main": [
+        [
+          {
+            "node": "Send Trend Update",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download Video for YouTube": {
+      "main": [
+        [
+          {
+            "node": "YouTube Upload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Carry Data After C": {
+      "main": [
+        [
+          {
+            "node": "Collect All Thumbnails",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Render Complete": {
+      "main": [
+        [
+          {
+            "node": "Build Approval Message v6",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}
+

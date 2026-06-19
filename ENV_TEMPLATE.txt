@@ -1,0 +1,21 @@
+# Mohammed's API Keys Template
+# Copy this to .env and fill in values — NEVER commit .env to GitHub
+
+ANTHROPIC_API_KEY=
+OPENAI_API_KEY=
+ELEVENLABS_API_KEY=
+CREATOMATE_API_KEY=
+N8N_API_KEY=
+GITHUB_TOKEN=
+TAVILY_API_KEY=tvly-dev-...
+
+# ElevenLabs Voice IDs (fixed — do not change)
+ELEVENLABS_VOICE_MAX=Gfpl8Yo74Is0W6cPUWWT
+ELEVENLABS_VOICE_SAMANTHA=uIZsnBL0YK1S5j69bAih
+ELEVENLABS_VOICE_TAKSH=aF6JALq9R6tXwCczjhKH
+
+# n8n
+N8N_BASE_URL=https://theindianguyy.app.n8n.cloud
+
+# Telegram
+TELEGRAM_SECURITY_WHITELIST_ID=8370599696
